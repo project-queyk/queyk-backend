@@ -12,6 +12,8 @@ export const userSchema = z.object({
   role: z.union(roleUnion),
 });
 
+export type User = z.infer<typeof userSchema>;
+
 export const tokenSchema = z.object({
   id: z.uuid(),
   type: z.string(),
@@ -19,3 +21,5 @@ export const tokenSchema = z.object({
   createdAt: z.date(),
   expiresAt: z.nullish(z.date()),
 });
+
+export type Token = z.infer<typeof tokenSchema>;
