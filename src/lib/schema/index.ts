@@ -1,5 +1,13 @@
 import { z } from "zod/v4";
 
+const schoolDomain = process.env.SCHOOL_EMAIL_ADDRESS ?? "@school.edu";
+
+export const schoolEmailSchema = z
+  .email()
+  .refine((email) => email.endsWith(schoolDomain), {
+    message: `Email must belong to the school's domain (${schoolDomain}). Example: "alice${schoolDomain}"`,
+  });
+
 export const roleUnion = [z.literal("user"), z.literal("admin")];
 
 export const userSchema = z.object({
