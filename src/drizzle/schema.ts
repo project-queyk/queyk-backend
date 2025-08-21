@@ -16,6 +16,7 @@ export const user = pgTable("user", {
   profileImage: text("profile_image").notNull(),
   alertNotification: boolean("alert_notification").default(true).notNull(),
   role: roleEnum("role").default("user").notNull(),
+  oauthId: text("oauth_id").notNull(),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date())

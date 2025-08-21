@@ -17,6 +17,8 @@ export const tokenTypeUnion = [
   z.literal("iot"),
 ];
 
+export type TokenType = z.infer<typeof tokenTypeUnion>;
+
 export const userSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -25,6 +27,7 @@ export const userSchema = z.object({
   alertNotification: z.boolean(),
   createdAt: z.date(),
   role: z.union(roleUnion),
+  oauthId: z.string(),
 });
 
 export type User = z.infer<typeof userSchema>;
