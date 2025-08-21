@@ -1,4 +1,7 @@
+import { config } from "dotenv";
 import { z } from "zod/v4";
+
+config({ path: ".env.local" });
 
 const schoolDomain = process.env.SCHOOL_EMAIL_ADDRESS ?? "@school.edu";
 
@@ -17,7 +20,9 @@ export const tokenTypeUnion = [
   z.literal("iot"),
 ];
 
-export type TokenType = z.infer<typeof tokenTypeUnion>;
+const tokenTypeUnionSchema = z.union(tokenTypeUnion);
+
+export type TokenType = z.infer<typeof tokenTypeUnionSchema>;
 
 export const userSchema = z.object({
   id: z.uuid(),
@@ -28,6 +33,13 @@ export const userSchema = z.object({
   createdAt: z.date(),
   role: z.union(roleUnion),
   oauthId: z.string(),
+});
+
+export const createUserSchema = userSchema.omit({
+  id: true,
+  role: true,
+  createdAt: true,
+  alertNotification: true,
 });
 
 export type User = z.infer<typeof userSchema>;
