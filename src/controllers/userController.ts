@@ -51,10 +51,10 @@ export async function createUser(req: Request, res: Response) {
     const userExist = await getUserByEmailAndOauthId(email, oauthId);
 
     if (userExist) {
-      return res.status(409).send({
-        message: "User with this email and OAuth ID already exists",
-        error: "Conflict",
-        statusCode: 409,
+      return res.status(200).send({
+        message: "User already exists",
+        statusCode: 200,
+        data: null,
       });
     }
 
@@ -70,7 +70,7 @@ export async function createUser(req: Request, res: Response) {
     return res.status(201).send({
       message: "User created successfully",
       statusCode: 201,
-      data: newUser,
+      data: null,
     });
   } catch (error) {
     return res.status(500).send({
