@@ -8,7 +8,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
     await createUser(req, res);
   } catch (error) {
-    next;
+    next(error);
   }
 });
 
