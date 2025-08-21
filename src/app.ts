@@ -6,6 +6,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import rateLimit from "express-rate-limit";
 
+import userRouter from "./routes/users";
+// import tokenRouter from "./routes/tokens";
+
 const app = express();
 
 const limiter = rateLimit({
@@ -16,7 +19,7 @@ const limiter = rateLimit({
 });
 
 app.use(helmet());
-app.use(limiter);
+// app.use(limiter);
 app.use(morgan("dev"));
 app.use(
   cors({
@@ -40,5 +43,8 @@ app.get("/", (req, res) => {
     environment: process.env.NODE_ENV || "development",
   });
 });
+
+app.use("/v1/api/users", limiter, userRouter);
+// app.use("/v1/api/tokens", tokenRouter);
 
 export default app;
