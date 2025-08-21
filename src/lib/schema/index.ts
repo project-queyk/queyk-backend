@@ -20,7 +20,7 @@ export const tokenTypeUnion = [
   z.literal("iot"),
 ];
 
-const tokenTypeUnionSchema = z.union(tokenTypeUnion);
+export const tokenTypeUnionSchema = z.union(tokenTypeUnion);
 
 export type TokenType = z.infer<typeof tokenTypeUnionSchema>;
 
