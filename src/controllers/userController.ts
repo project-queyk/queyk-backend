@@ -10,34 +10,34 @@ import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 config({ path: ".env.local" });
 
 export async function createUser(req: Request, res: Response) {
+  const { name, email, profileImage, oauthId, tokenType } = req.body;
+
+  const missingFields = [];
+  if (!name) missingFields.push("name");
+  if (!email) missingFields.push("email");
+  if (!profileImage) missingFields.push("profileImage");
+  if (!oauthId) missingFields.push("oauthId");
+  if (!tokenType) missingFields.push("tokenType");
+
+  if (missingFields.length > 0) {
+    return res.status(400).send({
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  const isValidEmail = schoolEmailSchema.safeParse(email);
+
+  if (isValidEmail.error) {
+    return res.status(400).send({
+      message: isValidEmail.error.message,
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
   try {
-    const { name, email, profileImage, oauthId, tokenType } = req.body;
-
-    const missingFields = [];
-    if (!name) missingFields.push("name");
-    if (!email) missingFields.push("email");
-    if (!profileImage) missingFields.push("profileImage");
-    if (!oauthId) missingFields.push("oauthId");
-    if (!tokenType) missingFields.push("tokenType");
-
-    if (missingFields.length > 0) {
-      return res.status(400).send({
-        message: `Missing required fields: ${missingFields.join(", ")}`,
-        error: "Bad Request",
-        statusCode: 400,
-      });
-    }
-
-    const isValidEmail = schoolEmailSchema.safeParse(email);
-
-    if (isValidEmail.error) {
-      return res.status(400).send({
-        message: isValidEmail.error.message,
-        error: "Bad Request",
-        statusCode: 400,
-      });
-    }
-
     const isValidToken = await verifyToken(req, tokenType);
 
     if (!isValidToken?.isValidToken) {
