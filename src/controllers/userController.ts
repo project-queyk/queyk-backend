@@ -4,6 +4,7 @@ import { Request, Response } from "express";
 import { db } from "../drizzle";
 import { verifyToken } from "../lib/auth";
 import { user } from "../drizzle/schema";
+import { formatZodError } from "../lib/utils";
 import { schoolEmailSchema } from "../lib/schema";
 import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 
@@ -31,7 +32,7 @@ export async function createUser(req: Request, res: Response) {
 
   if (isValidEmail.error) {
     return res.status(400).send({
-      message: isValidEmail.error.message,
+      message: formatZodError(isValidEmail.error),
       error: "Bad Request",
       statusCode: 400,
     });

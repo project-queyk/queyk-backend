@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 
 import { db } from "../drizzle";
 import { token } from "../drizzle/schema";
+import { formatZodError } from "../lib/utils";
 import { tokenTypeUnionSchema } from "../lib/schema";
 import { getTokenByTokenType } from "../lib/service/token-service";
 
@@ -21,7 +22,7 @@ export async function createToken(req: Request, res: Response) {
 
   if (isValidTokenType.error) {
     return res.status(400).send({
-      message: isValidTokenType.error.message,
+      message: formatZodError(isValidTokenType.error),
       error: "Bad Request",
       statusCode: 400,
     });
