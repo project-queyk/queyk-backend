@@ -1,5 +1,7 @@
 import {
   boolean,
+  doublePrecision,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -29,6 +31,19 @@ export const token = pgTable("token", {
   type: tokenTypeEnum("type").notNull(),
   token: text("token").notNull(),
   expiredAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const reading = pgTable("reading", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  siAverage: doublePrecision("si_average").notNull(),
+  siMinimum: doublePrecision("si_minimum").notNull(),
+  siMaximum: doublePrecision("si_maximum").notNull(),
+  isEarthquake: boolean("is_earthquake").notNull(),
+  battery: integer("battery").notNull(),
+  signalStrength: boolean("signal_strength").notNull(),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date()),

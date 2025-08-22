@@ -53,3 +53,14 @@ export const tokenSchema = z.object({
 });
 
 export type Token = z.infer<typeof tokenSchema>;
+
+export const readingSchema = z.object({
+  id: z.uuid(),
+  siAverage: z.number(),
+  siMinimum: z.number(),
+  siMaximum: z.number(),
+  isEarthquake: z.boolean(),
+  battery: z.number(),
+  signalStrength: z.string(),
+  createdAt: z.date(),
+});
