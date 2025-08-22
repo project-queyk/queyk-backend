@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import rateLimit from "express-rate-limit";
 
 import userRouter from "./routes/users";
+import readingRouter from "./routes/readings";
 // import tokenRouter from "./routes/tokens";
 
 const app = express();
@@ -45,6 +46,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/v1/api/users", limiter, userRouter);
+app.use("/v1/api/iot/readings", readingRouter);
+
 // app.use("/v1/api/tokens", tokenRouter);
 
 export default app;
