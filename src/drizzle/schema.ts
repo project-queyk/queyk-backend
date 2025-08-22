@@ -43,7 +43,7 @@ export const reading = pgTable("reading", {
   siMaximum: doublePrecision("si_maximum").notNull(),
   isEarthquake: boolean("is_earthquake").notNull(),
   battery: integer("battery").notNull(),
-  signalStrength: boolean("signal_strength").notNull(),
+  signalStrength: text("signal_strength").notNull(),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date()),

@@ -66,3 +66,8 @@ export const readingSchema = z.object({
 });
 
 export type Reading = z.infer<typeof readingSchema>;
+
+export const createReadingSchema = readingSchema.omit({
+  id: true,
+  createdAt: true,
+});
