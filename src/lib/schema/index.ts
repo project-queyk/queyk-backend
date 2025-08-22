@@ -64,3 +64,5 @@ export const readingSchema = z.object({
   signalStrength: z.string(),
   createdAt: z.date(),
 });
+
+export type Reading = z.infer<typeof readingSchema>;
