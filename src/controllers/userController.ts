@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { config } from "dotenv";
 import { Request, Response } from "express";
 
@@ -86,6 +87,62 @@ export async function createUser(req: Request, res: Response) {
     return res.status(500).send({
       message:
         "An unexpected error occurred while creating the account. Please try again later. If the problem persists, contact support.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function getUserByUserId(req: Request, res: Response) {
+  const { userId, tokenType } = req.params;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (tokenType !== "admin") {
+    return res.status(403).send({
+      message:
+        "Invalid token type. Only 'admin' token type is allowed for user access.",
+      error: "Forbidden",
+      statusCode: 403,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req, tokenType);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [data] = await db.select().from(user).where(eq(user.id, userId));
+
+    if (!data) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    return res
+      .status(200)
+      .send({ message: "User found", statusCode: 200, data });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? error.message
+          : "There was an error retrieving the user data.",
       error: "Internal Server Error",
       statusCode: 500,
     });
