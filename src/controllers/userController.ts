@@ -93,6 +93,56 @@ export async function createUser(req: Request, res: Response) {
   }
 }
 
+export async function getAllUsers(req: Request, res: Response) {
+  const { tokenType } = req.params;
+
+  if (tokenType !== "admin") {
+    return res.status(403).send({
+      message:
+        "Invalid token type. Only 'admin' token type is allowed for users data access.",
+      error: "Forbidden",
+      statusCode: 403,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req, tokenType);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const data = await db.select().from(user);
+
+    if (!data.length) {
+      return res.status(200).send({
+        message: "No users found in the database",
+        statusCode: 200,
+        data: [],
+      });
+    }
+
+    return res.status(200).send({
+      message: "Users retrieved successfully",
+      statusCode: 200,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? error.message
+          : "There was an error retrieving users data.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
 export async function getUserByUserId(req: Request, res: Response) {
   const { userId, tokenType } = req.params;
 
