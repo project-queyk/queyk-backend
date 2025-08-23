@@ -28,6 +28,15 @@ export async function createUser(req: Request, res: Response) {
     });
   }
 
+  if (tokenType !== "auth") {
+    return res.status(403).send({
+      message:
+        "Invalid token type. Only 'auth' token type is allowed for user creation.",
+      error: "Forbidden",
+      statusCode: 403,
+    });
+  }
+
   const isValidEmail = schoolEmailSchema.safeParse(email);
 
   if (isValidEmail.error) {

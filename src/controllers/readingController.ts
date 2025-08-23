@@ -36,7 +36,8 @@ export async function createReading(req: Request, res: Response) {
 
   if (tokenType !== "iot") {
     return res.status(401).send({
-      message: "Invalid or expired authentication token",
+      message:
+        "Only IoT devices can create readings. Please use an IoT authentication token.",
       error: "Unauthorized",
       statusCode: 401,
     });

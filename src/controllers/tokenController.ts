@@ -18,6 +18,15 @@ export async function createToken(req: Request, res: Response) {
     });
   }
 
+  if (tokenType !== "admin") {
+    return res.status(403).send({
+      message:
+        "Only admin token type is allowed to create tokens. Access denied.",
+      error: "Forbidden",
+      statusCode: 403,
+    });
+  }
+
   const isValidTokenType = tokenTypeUnionSchema.safeParse(tokenType);
 
   if (isValidTokenType.error) {
