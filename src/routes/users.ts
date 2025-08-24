@@ -16,19 +16,16 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.get(
-  "/:tokenType",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      await getAllUsers(req, res);
-    } catch (error) {
-      next(error);
-    }
+router.get("/", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await getAllUsers(req, res);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 router.get(
-  "/:userId/:tokenType",
+  "/:userId",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await getUserByUserId(req, res);

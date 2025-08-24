@@ -12,29 +12,19 @@ import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 config({ path: ".env.local" });
 
 export async function createUser(req: Request, res: Response) {
-  const { name, email, profileImage, oauthId, tokenType } = req.body;
+  const { name, email, profileImage, oauthId } = req.body;
 
   const missingFields = [];
   if (!name) missingFields.push("name");
   if (!email) missingFields.push("email");
   if (!profileImage) missingFields.push("profileImage");
   if (!oauthId) missingFields.push("oauthId");
-  if (!tokenType) missingFields.push("tokenType");
 
   if (missingFields.length > 0) {
     return res.status(400).send({
       message: `Missing required fields: ${missingFields.join(", ")}`,
       error: "Bad Request",
       statusCode: 400,
-    });
-  }
-
-  if (tokenType !== "auth") {
-    return res.status(403).send({
-      message:
-        "Invalid token type. Only 'auth' token type is allowed for user creation.",
-      error: "Forbidden",
-      statusCode: 403,
     });
   }
 
@@ -49,7 +39,7 @@ export async function createUser(req: Request, res: Response) {
   }
 
   try {
-    const isValidToken = await verifyToken(req, tokenType);
+    const isValidToken = await verifyToken(req);
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
@@ -94,19 +84,8 @@ export async function createUser(req: Request, res: Response) {
 }
 
 export async function getAllUsers(req: Request, res: Response) {
-  const { tokenType } = req.params;
-
-  if (tokenType !== "admin") {
-    return res.status(403).send({
-      message:
-        "Invalid token type. Only 'admin' token type is allowed for users data access.",
-      error: "Forbidden",
-      statusCode: 403,
-    });
-  }
-
   try {
-    const isValidToken = await verifyToken(req, tokenType);
+    const isValidToken = await verifyToken(req);
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
@@ -144,7 +123,7 @@ export async function getAllUsers(req: Request, res: Response) {
 }
 
 export async function getUserByUserId(req: Request, res: Response) {
-  const { userId, tokenType } = req.params;
+  const { userId } = req.params;
 
   if (!userId) {
     return res.status(400).send({
@@ -154,17 +133,8 @@ export async function getUserByUserId(req: Request, res: Response) {
     });
   }
 
-  if (tokenType !== "admin") {
-    return res.status(403).send({
-      message:
-        "Invalid token type. Only 'admin' token type is allowed for user access.",
-      error: "Forbidden",
-      statusCode: 403,
-    });
-  }
-
   try {
-    const isValidToken = await verifyToken(req, tokenType);
+    const isValidToken = await verifyToken(req);
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({

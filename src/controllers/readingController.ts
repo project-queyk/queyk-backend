@@ -14,7 +14,6 @@ export async function createReading(req: Request, res: Response) {
     isEarthquake,
     battery,
     signalStrength,
-    tokenType,
   } = req.body;
 
   const missingFields = [];
@@ -24,22 +23,12 @@ export async function createReading(req: Request, res: Response) {
   if (isEarthquake == null) missingFields.push("isEarthquake");
   if (battery == null) missingFields.push("battery");
   if (signalStrength == null) missingFields.push("signalStrength");
-  if (tokenType == null) missingFields.push("tokenType");
 
   if (missingFields.length > 0) {
     return res.status(400).send({
       message: `Missing required fields: ${missingFields.join(", ")}`,
       error: "Bad Request",
       statusCode: 400,
-    });
-  }
-
-  if (tokenType !== "iot") {
-    return res.status(401).send({
-      message:
-        "Only IoT devices can create readings. Please use an IoT authentication token.",
-      error: "Unauthorized",
-      statusCode: 401,
     });
   }
 
@@ -63,7 +52,7 @@ export async function createReading(req: Request, res: Response) {
   }
 
   try {
-    const isValidToken = await verifyToken(req, tokenType);
+    const isValidToken = await verifyToken(req);
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({

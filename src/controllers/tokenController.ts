@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 
 import { db } from "../drizzle";
 import { token } from "../drizzle/schema";
+import { verifyToken } from "../lib/auth";
 import { formatZodError } from "../lib/utils";
 import { tokenTypeUnionSchema } from "../lib/schema";
 import { getTokenByTokenType } from "../lib/service/token-service";
@@ -18,15 +19,6 @@ export async function createToken(req: Request, res: Response) {
     });
   }
 
-  if (tokenType !== "admin") {
-    return res.status(403).send({
-      message:
-        "Only admin token type is allowed to create tokens. Access denied.",
-      error: "Forbidden",
-      statusCode: 403,
-    });
-  }
-
   const isValidTokenType = tokenTypeUnionSchema.safeParse(tokenType);
 
   if (isValidTokenType.error) {
@@ -38,6 +30,16 @@ export async function createToken(req: Request, res: Response) {
   }
 
   try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
     const existingTokenWithSameTokenType = await getTokenByTokenType(tokenType);
 
     if (existingTokenWithSameTokenType) {

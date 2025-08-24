@@ -30,7 +30,7 @@ app.use(
         : [process.env.FRONTEND_APP_URL!, process.env.LOCALHOST_APP_URL ?? ""],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Token-Type"],
   })
 );
 app.use(express.json());

@@ -1,12 +1,14 @@
-import { eq } from "drizzle-orm";
 import { Request } from "express";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "../../drizzle";
-import { TokenType } from "../schema";
+import { formatZodError } from "../utils";
 import { token } from "../../drizzle/schema";
+import { tokenTypeUnionSchema } from "../schema";
 
-export async function verifyToken(req: Request, tokenType: TokenType) {
+export async function verifyToken(req: Request) {
   const authHeader = req.headers.authorization;
+  const tokenType = req.headers["token-type"];
 
   if (!authHeader) {
     return {
@@ -20,7 +22,18 @@ export async function verifyToken(req: Request, tokenType: TokenType) {
   if (!tokenType) {
     return {
       isValidToken: false,
-      message: "No authorization header found",
+      message: "No token type found in the headers",
+      error: "Unauthorized",
+      statusCode: 401,
+    };
+  }
+
+  const isValidTokenType = tokenTypeUnionSchema.safeParse(tokenType);
+
+  if (isValidTokenType.error) {
+    return {
+      isValidToken: false,
+      message: formatZodError(isValidTokenType.error),
       error: "Unauthorized",
       statusCode: 401,
     };
@@ -41,7 +54,9 @@ export async function verifyToken(req: Request, tokenType: TokenType) {
     const [isAuthorized] = await db
       .select()
       .from(token)
-      .where(eq(token.token, bearerToken));
+      .where(
+        and(eq(token.token, bearerToken), eq(token.type, isValidTokenType.data))
+      );
 
     if (!isAuthorized) {
       return {
@@ -58,5 +73,13 @@ export async function verifyToken(req: Request, tokenType: TokenType) {
       error: null,
       statusCode: 200,
     };
-  } catch (error) {}
+  } catch (error) {
+    return {
+      isValidToken: false,
+      message:
+        error instanceof Error ? error.message : "Invalid or expired token",
+      error: "Unauthorized",
+      statusCode: 401,
+    };
+  }
 }
