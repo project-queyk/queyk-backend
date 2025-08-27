@@ -59,7 +59,6 @@ export const readingSchema = z.object({
   siAverage: z.number(),
   siMinimum: z.number(),
   siMaximum: z.number(),
-  isEarthquake: z.boolean(),
   battery: z.number(),
   signalStrength: z.string(),
   createdAt: z.date(),

@@ -12,20 +12,12 @@ import {
 } from "../lib/service/reading-service";
 
 export async function createReading(req: Request, res: Response) {
-  const {
-    siAverage,
-    siMinimum,
-    siMaximum,
-    isEarthquake,
-    battery,
-    signalStrength,
-  } = req.body;
+  const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
 
   const missingFields = [];
   if (siAverage == null) missingFields.push("siAverage");
   if (siMinimum == null) missingFields.push("siMinimum");
   if (siMaximum == null) missingFields.push("siMaximum");
-  if (isEarthquake == null) missingFields.push("isEarthquake");
   if (battery == null) missingFields.push("battery");
   if (signalStrength == null) missingFields.push("signalStrength");
 
@@ -41,7 +33,6 @@ export async function createReading(req: Request, res: Response) {
     siAverage,
     siMinimum,
     siMaximum,
-    isEarthquake,
     battery,
     signalStrength,
   };
