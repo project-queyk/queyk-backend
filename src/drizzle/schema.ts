@@ -41,7 +41,7 @@ export const reading = pgTable("reading", {
   siAverage: doublePrecision("si_average").notNull(),
   siMinimum: doublePrecision("si_minimum").notNull(),
   siMaximum: doublePrecision("si_maximum").notNull(),
-  battery: integer("battery").notNull(),
+  battery: doublePrecision("battery").notNull(),
   signalStrength: text("signal_strength").notNull(),
   createdAt: timestamp("created_at")
     .notNull()
