@@ -4,6 +4,7 @@ import {
   createUser,
   getAllUsers,
   getUserByUserId,
+  toggleAlertNotification,
 } from "../controllers/userController";
 
 const router = Router();
@@ -29,6 +30,17 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await getUserByUserId(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:oauthId/notifications",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await toggleAlertNotification(req, res);
     } catch (error) {
       next(error);
     }

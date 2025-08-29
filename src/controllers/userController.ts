@@ -168,3 +168,80 @@ export async function getUserByUserId(req: Request, res: Response) {
     });
   }
 }
+
+export async function toggleAlertNotification(req: Request, res: Response) {
+  const { oauthId } = req.params;
+  const { alertNotification } = req.body;
+
+  if (!oauthId) {
+    return res.status(400).send({
+      message: "OAuth ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (typeof alertNotification !== "boolean") {
+    return res.status(400).send({
+      message: "alertNotification must be a boolean value",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.oauthId, oauthId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ alertNotification })
+      .where(eq(user.oauthId, oauthId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update notification preferences",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: `Alert notifications ${
+        alertNotification ? "enabled" : "disabled"
+      } successfully`,
+      statusCode: 200,
+      data: { alertNotification: updatedUser.alertNotification },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating notification preferences: ${error.message}`
+          : "An unexpected error occurred while updating notification preferences",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
