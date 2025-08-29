@@ -9,6 +9,7 @@ import rateLimit from "express-rate-limit";
 import userRouter from "./routes/users";
 import readingRouter from "./routes/readings";
 import emailRouter from "./routes/email";
+import earthquakeRouter from "./routes/earthquakes";
 // import tokenRouter from "./routes/tokens";
 
 const app = express();
@@ -48,8 +49,10 @@ app.get("/", (req, res) => {
 
 app.use("/v1/api/users", limiter, userRouter);
 app.use("/v1/api/iot/readings", readingRouter);
-app.use("/v1/api/readings", readingRouter);
+app.use("/v1/api/readings", limiter, readingRouter);
 app.use("/v1/api/email", emailRouter);
+app.use("/v1/api/iot/earthquakes", earthquakeRouter);
+app.use("/v1/api/earthquakes", limiter, earthquakeRouter);
 
 // app.use("/v1/api/tokens", tokenRouter);
 
