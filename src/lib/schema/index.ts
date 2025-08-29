@@ -80,7 +80,7 @@ export const earthquakeSchema = z.object({
 
 export type Earthquake = z.infer<typeof earthquakeSchema>;
 
-export const createEarthquakeSchema = readingSchema.omit({
+export const createEarthquakeSchema = earthquakeSchema.omit({
   id: true,
   createdAt: true,
 });
