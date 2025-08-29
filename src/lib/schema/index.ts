@@ -70,3 +70,17 @@ export const createReadingSchema = readingSchema.omit({
   id: true,
   createdAt: true,
 });
+
+export const earthquakeSchema = z.object({
+  id: z.uuid(),
+  magnitude: z.number(),
+  duration: z.number(),
+  createdAt: z.date(),
+});
+
+export type Earthquake = z.infer<typeof earthquakeSchema>;
+
+export const createEarthquakeSchema = readingSchema.omit({
+  id: true,
+  createdAt: true,
+});

@@ -47,3 +47,12 @@ export const reading = pgTable("reading", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+export const earthquake = pgTable("earthquake", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  magnitude: doublePrecision("magnitude").notNull(),
+  duration: integer("duration").notNull(),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
