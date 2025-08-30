@@ -6,13 +6,13 @@ import { reading } from "../drizzle/schema";
 import { verifyToken } from "../lib/auth";
 import { formatZodError } from "../lib/utils";
 import { createReadingSchema } from "../lib/schema";
+import generateResponse from "../lib/service/gemini";
 import {
   getAllReadings,
   getAllStartEndReadings,
   getBatteryLevel,
   getFirstDataDate,
 } from "../lib/service/reading-service";
-import generateResponse from "../lib/service/gemini";
 
 const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Based on the seismic intensity (SI) readings provided, generate a concise professional summary that includes:
 - Current seismic activity level assessment
@@ -20,7 +20,7 @@ const systemInstruction = `You are a seismic monitoring AI assistant for earthqu
 - Notable patterns or anomalies in the data
 - Brief safety recommendations if applicable
 Keep response under 150 words and maintain a calm, informative tone.
-IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format like "04:00 PM" without mentioning "Philippine Time" or timezone.`;
+IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.`;
 
 export async function createReading(req: Request, res: Response) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
@@ -115,32 +115,14 @@ export async function getReadings(req: Request, res: Response) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
 
-      console.log("Original dates:", { startDate, endDate });
-      console.log("Parsed dates before setHours:", { start: start.toISOString(), end: end.toISOString() });
-
-      // Adjust for Philippine timezone (UTC+8) by subtracting 8 hours from the start
-      // and adding 16 hours to the end to cover the full Philippine day in UTC
       start.setHours(-8, 0, 0, 0);
       end.setHours(15, 59, 59, 999);
-
-      console.log("Final date range for DB query:", { start: start.toISOString(), end: end.toISOString() });
 
       const firstDate = await getFirstDataDate();
 
       const batteryLevel = await getBatteryLevel();
-      
-      console.log("Available data info:", { 
-        firstAvailableDate: firstDate?.firstDate,
-        latestBatteryReading: batteryLevel 
-      });
 
       const readings = await getAllStartEndReadings(start, end);
-      
-      console.log("Database query result:", { 
-        readingsCount: readings?.length || 0, 
-        firstReading: readings?.[0]?.createdAt,
-        lastReading: readings?.[readings.length - 1]?.createdAt 
-      });
 
       const startDateStr = (startDate as string).split("T")[0];
       const endDateStr = (endDate as string).split("T")[0];
