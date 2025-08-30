@@ -56,3 +56,32 @@ export const earthquake = pgTable("earthquake", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+export const floorPlan = pgTable("floor_plan", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  name: text("name").notNull(),
+  imageUrl: text("image_url").notNull(),
+  buildingName: text("building_name").notNull(),
+  floorNumber: integer("floor_number").notNull(),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const location = pgTable("location", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  floorPlanId: uuid("floor_plan_id")
+    .references(() => floorPlan.id)
+    .notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  latitude: doublePrecision("latitude").notNull(),
+  longitude: doublePrecision("longitude").notNull(),
+  radiusMeters: doublePrecision("radius_meters").notNull(),
+  displayX: integer("display_x").notNull(),
+  displayY: integer("display_y").notNull(),
+
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
