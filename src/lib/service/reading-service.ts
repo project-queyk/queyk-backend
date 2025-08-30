@@ -1,4 +1,4 @@
-import { and, gte, lte } from "drizzle-orm";
+import { and, gte, lte, desc } from "drizzle-orm";
 
 import { db } from "../../drizzle";
 import { Reading } from "../schema";
@@ -21,6 +21,29 @@ export async function getAllStartEndReadings(startDate: Date, endDate: Date) {
     );
 
   if (!readings.length) return null;
+
+  return readings;
+}
+
+export async function getFirstDataDate() {
+  const [readings] = await db
+    .select({ firstDate: reading.createdAt })
+    .from(reading)
+    .limit(1);
+
+  if (!readings) return null;
+
+  return readings;
+}
+
+export async function getBatteryLevel() {
+  const [readings] = await db
+    .select({ battery: reading.battery })
+    .from(reading)
+    .orderBy(desc(reading.createdAt))
+    .limit(1);
+
+  if (!readings) return null;
 
   return readings;
 }
