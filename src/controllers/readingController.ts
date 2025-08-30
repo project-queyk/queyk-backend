@@ -115,15 +115,25 @@ export async function getReadings(req: Request, res: Response) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
 
-      // start.setHours(0, 0, 0, 0);
+      console.log("Original dates:", { startDate, endDate });
+      console.log("Parsed dates before setHours:", { start: start.toISOString(), end: end.toISOString() });
 
-      // end.setHours(23, 59, 59, 999);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
+      console.log("Final date range for DB query:", { start: start.toISOString(), end: end.toISOString() });
 
       const firstDate = await getFirstDataDate();
 
       const batteryLevel = await getBatteryLevel();
 
       const readings = await getAllStartEndReadings(start, end);
+      
+      console.log("Database query result:", { 
+        readingsCount: readings?.length || 0, 
+        firstReading: readings?.[0]?.createdAt,
+        lastReading: readings?.[readings.length - 1]?.createdAt 
+      });
 
       const startDateStr = (startDate as string).split("T")[0];
       const endDateStr = (endDate as string).split("T")[0];
