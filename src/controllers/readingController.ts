@@ -118,14 +118,21 @@ export async function getReadings(req: Request, res: Response) {
       console.log("Original dates:", { startDate, endDate });
       console.log("Parsed dates before setHours:", { start: start.toISOString(), end: end.toISOString() });
 
-      start.setHours(0, 0, 0, 0);
-      end.setHours(23, 59, 59, 999);
+      // Adjust for Philippine timezone (UTC+8) by subtracting 8 hours from the start
+      // and adding 16 hours to the end to cover the full Philippine day in UTC
+      start.setHours(-8, 0, 0, 0);
+      end.setHours(15, 59, 59, 999);
 
       console.log("Final date range for DB query:", { start: start.toISOString(), end: end.toISOString() });
 
       const firstDate = await getFirstDataDate();
 
       const batteryLevel = await getBatteryLevel();
+      
+      console.log("Available data info:", { 
+        firstAvailableDate: firstDate?.firstDate,
+        latestBatteryReading: batteryLevel 
+      });
 
       const readings = await getAllStartEndReadings(start, end);
       
