@@ -101,6 +101,10 @@ export async function getEarthquakes(req: Request, res: Response) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
 
+      start.setHours(0, 0, 0, 0);
+
+      end.setHours(23, 59, 59, 999);
+
       const readings = await getAllStartEndEarthquakes(start, end);
 
       return res.status(200).send({
