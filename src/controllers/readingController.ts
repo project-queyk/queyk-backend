@@ -115,9 +115,9 @@ export async function getReadings(req: Request, res: Response) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
 
-      start.setHours(0, 0, 0, 0);
+      // start.setHours(0, 0, 0, 0);
 
-      end.setHours(23, 59, 59, 999);
+      // end.setHours(23, 59, 59, 999);
 
       const firstDate = await getFirstDataDate();
 
