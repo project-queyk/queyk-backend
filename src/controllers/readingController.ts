@@ -127,22 +127,38 @@ export async function getReadings(req: Request, res: Response) {
       const startDateStr = (startDate as string).split("T")[0];
       const endDateStr = (endDate as string).split("T")[0];
 
-      const formattedStartDate = new Date(startDateStr).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-      const formattedEndDate = new Date(endDateStr).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+      const formattedStartDate = new Date(startDateStr).toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      );
+      const formattedEndDate = new Date(endDateStr).toLocaleDateString(
+        "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      );
 
       const prompt = `Analyze these seismic readings from ${formattedStartDate} to ${formattedEndDate}:
 ${JSON.stringify(readings, null, 2)}
 Battery level: ${batteryLevel?.battery || "Unknown"}%`;
 
-      const aiSummary = await generateResponse(prompt, systemInstruction);
+      let aiSummary;
+      try {
+        aiSummary = await generateResponse(prompt, systemInstruction);
+      } catch (error: any) {
+        if (error.status === 429) {
+          aiSummary =
+            "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+        } else {
+          aiSummary = "AI analysis is currently unavailable.";
+        }
+      }
 
       return res.status(200).send({
         message: "Readings retrieved successfully",
@@ -150,7 +166,7 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         data: readings,
         firstDate: firstDate?.firstDate,
         batteryLevel: batteryLevel?.battery,
-        aiSummary: aiSummary.text,
+        aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
       });
     }
 
