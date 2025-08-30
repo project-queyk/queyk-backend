@@ -127,21 +127,15 @@ export async function getReadings(req: Request, res: Response) {
       const startDateStr = (startDate as string).split("T")[0];
       const endDateStr = (endDate as string).split("T")[0];
 
-      const formattedStartDate = new Date(
-        startDateStr + "T00:00:00+08:00"
-      ).toLocaleDateString("en-US", {
+      const formattedStartDate = new Date(startDateStr).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
-        timeZone: "Asia/Manila",
       });
-      const formattedEndDate = new Date(
-        endDateStr + "T00:00:00+08:00"
-      ).toLocaleDateString("en-US", {
+      const formattedEndDate = new Date(endDateStr).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
-        timeZone: "Asia/Manila",
       });
 
       const prompt = `Analyze these seismic readings from ${formattedStartDate} to ${formattedEndDate}:
