@@ -10,6 +10,15 @@ import {
   getAllEarthquakes,
   getAllStartEndEarthquakes,
 } from "../lib/service/earthquake-service";
+import generateResponse from "../lib/service/gemini";
+
+const systemInstruction = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Based on the earthquake records provided, generate a concise professional summary that includes:
+- Historical earthquake activity assessment
+- Analysis of magnitude patterns and frequency
+- Notable trends or clusters in earthquake occurrences
+- Risk evaluation and safety insights based on historical data
+Keep response under 150 words and maintain a calm, informative tone.
+IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.`;
 
 export async function createEarthquake(req: Request, res: Response) {
   const { magnitude, duration } = req.body;
@@ -101,25 +110,107 @@ export async function getEarthquakes(req: Request, res: Response) {
       const start = new Date(startDate as string);
       const end = new Date(endDate as string);
 
-      start.setHours(0, 0, 0, 0);
+      start.setHours(-8, 0, 0, 0);
+      end.setHours(15, 59, 59, 999);
 
-      end.setHours(23, 59, 59, 999);
+      const earthquakes = await getAllStartEndEarthquakes(start, end);
 
-      const readings = await getAllStartEndEarthquakes(start, end);
+      let prompt;
+      if (earthquakes && earthquakes.length > 0) {
+        const dates = earthquakes.map((e) => new Date(e.createdAt));
+        const actualStartDate = new Date(
+          Math.min(...dates.map((d) => d.getTime()))
+        );
+        const actualEndDate = new Date(
+          Math.max(...dates.map((d) => d.getTime()))
+        );
+
+        const actualFormattedStart = actualStartDate.toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }
+        );
+        const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        prompt = `Analyze these earthquake records from ${actualFormattedStart} to ${actualFormattedEnd}:
+${JSON.stringify(earthquakes, null, 2)}`;
+      } else {
+        prompt = `No earthquake records found for the requested period.`;
+      }
+
+      let aiSummary;
+      try {
+        aiSummary = await generateResponse(prompt, systemInstruction);
+      } catch (error: any) {
+        if (error.status === 429) {
+          aiSummary =
+            "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+        } else {
+          aiSummary = "AI analysis is currently unavailable.";
+        }
+      }
 
       return res.status(200).send({
         message: "Earthquake record retrieved successfully",
         statusCode: 200,
-        data: readings,
+        data: earthquakes,
+        aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
       });
     }
 
-    const readings = await getAllEarthquakes();
+    const earthquakes = await getAllEarthquakes();
+
+    let prompt;
+    if (earthquakes && earthquakes.length > 0) {
+      const dates = earthquakes.map((e) => new Date(e.createdAt));
+      const actualStartDate = new Date(
+        Math.min(...dates.map((d) => d.getTime()))
+      );
+      const actualEndDate = new Date(
+        Math.max(...dates.map((d) => d.getTime()))
+      );
+
+      const actualFormattedStart = actualStartDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      prompt = `Analyze these historical earthquake records from ${actualFormattedStart} to ${actualFormattedEnd}:
+${JSON.stringify(earthquakes, null, 2)}`;
+    } else {
+      prompt = `No earthquake records found in the database.`;
+    }
+
+    let aiSummary;
+    try {
+      aiSummary = await generateResponse(prompt, systemInstruction);
+    } catch (error: any) {
+      if (error.status === 429) {
+        aiSummary =
+          "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+      } else {
+        aiSummary = "AI analysis is currently unavailable.";
+      }
+    }
 
     return res.status(200).send({
       message: "Earthquake record retrieved successfully",
       statusCode: 200,
-      data: readings,
+      data: earthquakes,
+      aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
     });
   } catch (error) {
     return res.status(500).send({
