@@ -55,7 +55,7 @@ export async function createUser(req: Request, res: Response) {
       return res.status(200).send({
         message: "User already exists",
         statusCode: 200,
-        data: null,
+        data: userExist,
       });
     }
 
@@ -71,7 +71,7 @@ export async function createUser(req: Request, res: Response) {
     return res.status(201).send({
       message: "User created successfully",
       statusCode: 201,
-      data: null,
+      data: newUser,
     });
   } catch (error) {
     return res.status(500).send({
