@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 
 import { db } from "../drizzle";
@@ -124,29 +124,37 @@ export async function getReadings(req: Request, res: Response) {
 
       const readings = await getAllStartEndReadings(start, end);
 
-      const startDateStr = (startDate as string).split("T")[0];
-      const endDateStr = (endDate as string).split("T")[0];
+      let prompt;
+      if (readings && readings.length > 0) {
+        const dates = readings.map((r) => new Date(r.createdAt));
+        const actualStartDate = new Date(
+          Math.min(...dates.map((d) => d.getTime()))
+        );
+        const actualEndDate = new Date(
+          Math.max(...dates.map((d) => d.getTime()))
+        );
 
-      const formattedStartDate = new Date(startDateStr).toLocaleDateString(
-        "en-US",
-        {
+        const actualFormattedStart = actualStartDate.toLocaleDateString(
+          "en-US",
+          {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }
+        );
+        const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",
-        }
-      );
-      const formattedEndDate = new Date(endDateStr).toLocaleDateString(
-        "en-US",
-        {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        }
-      );
+        });
 
-      const prompt = `Analyze these seismic readings from ${formattedStartDate} to ${formattedEndDate}:
+        prompt = `Analyze these seismic readings from ${actualFormattedStart} to ${actualFormattedEnd}:
 ${JSON.stringify(readings, null, 2)}
 Battery level: ${batteryLevel?.battery || "Unknown"}%`;
+      } else {
+        prompt = `No seismic readings found for the requested period.
+Battery level: ${batteryLevel?.battery || "Unknown"}%`;
+      }
 
       let aiSummary;
       try {
