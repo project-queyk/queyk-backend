@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
 import { config } from "dotenv";
+import { eq, ilike, count } from "drizzle-orm";
 import { Request, Response } from "express";
 
 import { db } from "../drizzle";
@@ -95,20 +95,63 @@ export async function getAllUsers(req: Request, res: Response) {
       });
     }
 
-    const data = await db.select().from(user);
+    const { name, page = "1", pageSize = "10" } = req.query;
+    const pageNumber = parseInt(page as string);
+    const size = parseInt(pageSize as string);
+    const offset = (pageNumber - 1) * size;
 
-    if (!data.length) {
+    if (name) {
+      const [data, totalResult] = await Promise.all([
+        db
+          .select()
+          .from(user)
+          .where(ilike(user.name, `%${name}%`))
+          .limit(size)
+          .offset(offset),
+        db
+          .select({ count: count() })
+          .from(user)
+          .where(ilike(user.name, `%${name}%`))
+      ]);
+
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / size);
+
       return res.status(200).send({
-        message: "No users found in the database",
+        message: data.length ? "Users retrieved successfully" : "No users found in the database",
         statusCode: 200,
-        data: [],
+        data,
+        pagination: {
+          page: pageNumber,
+          pageSize: size,
+          total,
+          totalPages,
+          hasNextPage: pageNumber < totalPages,
+          hasPreviousPage: pageNumber > 1,
+        },
       });
     }
 
+    const [data, totalResult] = await Promise.all([
+      db.select().from(user).limit(size).offset(offset),
+      db.select({ count: count() }).from(user)
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / size);
+
     return res.status(200).send({
-      message: "Users retrieved successfully",
+      message: data.length ? "Users retrieved successfully" : "No users found in the database",
       statusCode: 200,
       data,
+      pagination: {
+        page: pageNumber,
+        pageSize: size,
+        total,
+        totalPages,
+        hasNextPage: pageNumber < totalPages,
+        hasPreviousPage: pageNumber > 1,
+      },
     });
   } catch (error) {
     return res.status(500).send({
