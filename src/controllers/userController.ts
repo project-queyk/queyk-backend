@@ -170,12 +170,12 @@ export async function getUserByUserId(req: Request, res: Response) {
 }
 
 export async function toggleAlertNotification(req: Request, res: Response) {
-  const { oauthId } = req.params;
+  const { userId } = req.params;
   const { alertNotification } = req.body;
 
-  if (!oauthId) {
+  if (!userId) {
     return res.status(400).send({
-      message: "OAuth ID is required",
+      message: "User ID is required",
       error: "Bad Request",
       statusCode: 400,
     });
@@ -203,7 +203,7 @@ export async function toggleAlertNotification(req: Request, res: Response) {
     const [userExists] = await db
       .select()
       .from(user)
-      .where(eq(user.oauthId, oauthId));
+      .where(eq(user.id, userId));
 
     if (!userExists) {
       return res.status(404).send({
@@ -216,7 +216,7 @@ export async function toggleAlertNotification(req: Request, res: Response) {
     const [updatedUser] = await db
       .update(user)
       .set({ alertNotification })
-      .where(eq(user.oauthId, oauthId))
+      .where(eq(user.id, userId))
       .returning();
 
     if (!updatedUser) {

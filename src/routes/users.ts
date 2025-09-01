@@ -37,7 +37,7 @@ router.get(
 );
 
 router.patch(
-  "/:oauthId/notifications",
+  "/:userId/notifications",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await toggleAlertNotification(req, res);
