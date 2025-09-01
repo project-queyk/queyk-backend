@@ -14,13 +14,14 @@ import {
   getFirstDataDate,
 } from "../lib/service/reading-service";
 
-const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Based on the seismic intensity (SI) readings provided, generate a concise professional summary that includes:
+const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Generate a concise professional summary that includes:
 - Current seismic activity level assessment
 - Risk evaluation based on SI values (normal: <0.5, elevated: 0.5-1.0, concerning: >1.0)
 - Notable patterns or anomalies in the data
 - Brief safety recommendations if applicable
 Keep response under 150 words and maintain a calm, informative tone.
-IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.`;
+IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.
+Write naturally as if you are directly reporting on seismic monitoring without referencing datasets or data sources. Present findings as direct observations from monitoring equipment.`;
 
 export async function createReading(req: Request, res: Response) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;

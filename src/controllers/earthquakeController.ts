@@ -12,13 +12,14 @@ import {
 } from "../lib/service/earthquake-service";
 import generateResponse from "../lib/service/gemini";
 
-const systemInstruction = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Based on the earthquake records provided, generate a concise professional summary that includes:
+const systemInstruction = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Generate a concise professional summary that includes:
 - Historical earthquake activity assessment
 - Analysis of magnitude patterns and frequency
 - Notable trends or clusters in earthquake occurrences
 - Risk evaluation and safety insights based on historical data
 Keep response under 150 words and maintain a calm, informative tone.
-IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.`;
+IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.
+Write naturally as if you are directly reporting on seismic activity without referencing datasets or data sources. Present findings as direct observations.`;
 
 export async function createEarthquake(req: Request, res: Response) {
   const { magnitude, duration } = req.body;
