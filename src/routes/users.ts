@@ -2,8 +2,10 @@ import { Router, Request, Response, NextFunction } from "express";
 
 import {
   createUser,
+  deleteUserByUserId,
   getAllUsers,
   getUserByUserId,
+  switchUserRole,
   toggleAlertNotification,
 } from "../controllers/userController";
 
@@ -36,11 +38,33 @@ router.get(
   }
 );
 
+router.delete(
+  "/:userId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await deleteUserByUserId(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 router.patch(
   "/:userId/notifications",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await toggleAlertNotification(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:userId/role",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await switchUserRole(req, res);
     } catch (error) {
       next(error);
     }
