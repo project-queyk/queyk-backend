@@ -47,7 +47,12 @@ export async function sendEmail(req: Request, res: Response) {
 
     const contents = `An earthquake with magnitude ${magnitude} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
 
-    const aiResponse = await generateResponse(contents, systemInstruction);
+    let aiResponse;
+    try {
+      aiResponse = await generateResponse(contents, systemInstruction);
+    } catch (error) {
+      aiResponse = { text: null };
+    }
 
     await transporter.sendMail({
       from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
@@ -99,10 +104,10 @@ export async function sendEmail(req: Request, res: Response) {
                           ? "#fd7e14"
                           : "#dc3545"
                       }; font-size: 18px; font-weight: bold">${
-        aiResponse.text || 
-        (magnitude < 3 
+        aiResponse.text ||
+        (magnitude < 3
           ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
-          : magnitude < 6 
+          : magnitude < 6
           ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
           : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`)
       }</p>
