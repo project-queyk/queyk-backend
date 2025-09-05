@@ -1,6 +1,6 @@
 import { config } from "dotenv";
-import { eq, ilike, count } from "drizzle-orm";
 import { Request, Response } from "express";
+import { eq, ilike, count, desc } from "drizzle-orm";
 
 import { db } from "../drizzle";
 import { verifyToken } from "../lib/auth";
@@ -106,6 +106,7 @@ export async function getAllUsers(req: Request, res: Response) {
           .select()
           .from(user)
           .where(ilike(user.name, `%${name}%`))
+          .orderBy(desc(user.createdAt))
           .limit(size)
           .offset(offset),
         db
@@ -135,7 +136,12 @@ export async function getAllUsers(req: Request, res: Response) {
     }
 
     const [data, totalResult] = await Promise.all([
-      db.select().from(user).limit(size).offset(offset),
+      db
+        .select()
+        .from(user)
+        .orderBy(desc(user.createdAt))
+        .limit(size)
+        .offset(offset),
       db.select({ count: count() }).from(user),
     ]);
 
