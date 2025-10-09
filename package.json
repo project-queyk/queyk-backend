@@ -1,51 +1,12 @@
 {
-  "name": "queyk-backend",
-  "version": "1.0.0",
-  "main": "src/index.ts",
-  "scripts": {
-    "start": "ts-node src/index.ts",
-    "dev": "nodemon src/index.ts",
-    "build": "tsc",
-    "start:dist": "node dist/src/index.js",
-    "vercel-build": "echo 'No build step required'"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/project-queyk/queyk-backend.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/project-queyk/queyk-backend/issues"
-  },
-  "homepage": "https://github.com/project-queyk/queyk-backend#readme",
-  "description": "",
+  "name": "hono",
+  "type": "module",
   "dependencies": {
-    "@google/genai": "^1.16.0",
-    "@types/nodemailer": "^7.0.1",
-    "body-parser": "^2.2.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "drizzle-orm": "^0.44.4",
-    "express": "^5.1.0",
-    "express-rate-limit": "^8.0.1",
-    "helmet": "^8.1.0",
-    "morgan": "^1.10.1",
-    "nanoid": "^5.1.5",
-    "nodemailer": "^7.0.5",
-    "pg": "^8.16.3",
-    "postgres": "^3.4.7",
-    "zod": "^4.0.17"
+    "hono": "^4.9.10"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
-    "@types/morgan": "^1.9.10",
-    "@types/node": "^24.2.1",
-    "drizzle-kit": "^0.31.4",
-    "nodemon": "^3.1.10",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "@types/node": "^20.11.17",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
   }
 }

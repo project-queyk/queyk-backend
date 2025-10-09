@@ -1,7 +1,14 @@
-import app from "../src/app";
+import { Hono } from 'hono'
 
-const port = process.env.PORT || 8080;
+const app = new Hono()
 
-if (process.env.NODE_ENV !== "production") {
-  app.listen(port, () => console.log(`Server is running on port ${port}`));
-}
+const welcomeStrings = [
+  'Hello Hono!',
+  'To learn more about Hono on Vercel, visit https://vercel.com/docs/frameworks/backend/hono'
+]
+
+app.get('/', (c) => {
+  return c.text(welcomeStrings.join('\n\n'))
+})
+
+export default app
