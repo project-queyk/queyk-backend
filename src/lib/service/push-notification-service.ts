@@ -17,11 +17,17 @@ export async function getAllNotificationEnabledPushTokens(): Promise<
     .from(user)
     .where(eq(user.pushNotification, true));
 
+  console.log("🔍 Found users with pushNotification=true:", users.length);
+  console.log("📋 Users data:", JSON.stringify(users, null, 2));
+
   if (!users.length) return null;
 
   const validTokens = users.filter(
     (u) => u.token && Expo.isExpoPushToken(u.token)
   );
+
+  console.log("✅ Valid tokens after filtering:", validTokens.length);
+  console.log("📱 Valid tokens:", JSON.stringify(validTokens, null, 2));
 
   if (!validTokens.length) return null;
 
