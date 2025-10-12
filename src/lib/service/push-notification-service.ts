@@ -7,7 +7,9 @@ import { user } from "../../drizzle/schema";
 
 config({ path: ".env.local" });
 
-const expo = new Expo();
+const expo = new Expo({
+  accessToken: process.env.EXPO_ACCESS_TOKEN,
+});
 
 export async function getAllNotificationEnabledPushTokens(): Promise<
   { token: string; name: string }[] | null
