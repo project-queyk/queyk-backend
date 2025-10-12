@@ -19,6 +19,8 @@ export const user = pgTable("user", {
   email: text("email").notNull(),
   profileImage: text("profile_image").notNull(),
   alertNotification: boolean("alert_notification").default(true).notNull(),
+  pushNotification: boolean("push_notification").default(true).notNull(),
+  expoPushToken: text("expo_push_token"),
   role: roleEnum("role").default("user").notNull(),
   oauthId: text("oauth_id").notNull(),
   createdAt: timestamp("created_at")
