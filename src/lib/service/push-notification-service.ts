@@ -19,17 +19,11 @@ export async function getAllNotificationEnabledPushTokens(): Promise<
     .from(user)
     .where(eq(user.pushNotification, true));
 
-  console.log("🔍 Found users with pushNotification=true:", users.length);
-  console.log("📋 Users data:", JSON.stringify(users, null, 2));
-
   if (!users.length) return null;
 
   const validTokens = users.filter(
     (u) => u.token && Expo.isExpoPushToken(u.token)
   );
-
-  console.log("✅ Valid tokens after filtering:", validTokens.length);
-  console.log("📱 Valid tokens:", JSON.stringify(validTokens, null, 2));
 
   if (!validTokens.length) return null;
 
@@ -80,6 +74,9 @@ export async function sendPushNotifications(
         console.error("Error sending push notification chunk:", error);
       }
     }
+
+    console.log("✅ Total tickets sent:", tickets.length);
+    console.log("📊 Ticket details:", JSON.stringify(tickets, null, 2));
 
     return {
       success: true,
