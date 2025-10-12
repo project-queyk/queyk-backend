@@ -75,9 +75,6 @@ export async function sendPushNotifications(
       }
     }
 
-    console.log("✅ Total tickets sent:", tickets.length);
-    console.log("📊 Ticket details:", JSON.stringify(tickets, null, 2));
-
     return {
       success: true,
       tickets,
