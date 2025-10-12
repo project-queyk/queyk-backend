@@ -6,12 +6,9 @@ import {
   getAllNotificationEnabledEmails,
   transporter,
 } from "../lib/service/email-service";
-import generateResponse from "../lib/service/gemini";
+import { sendPushNotifications } from "../lib/service/push-notification-service";
 
 config({ path: ".env.local" });
-
-const systemInstruction =
-  "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated magnitude [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
 
 export async function sendEmail(req: Request, res: Response) {
   const { magnitude } = req.body;
@@ -45,14 +42,12 @@ export async function sendEmail(req: Request, res: Response) {
       });
     }
 
-    const contents = `An earthquake with magnitude ${magnitude} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
-
-    let aiResponse;
-    try {
-      aiResponse = await generateResponse(contents, systemInstruction);
-    } catch (error) {
-      aiResponse = { text: null };
-    }
+    const notificationMessage =
+      magnitude < 3
+        ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
+        : magnitude < 6
+        ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
+        : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`;
 
     await transporter.sendMail({
       from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
@@ -103,14 +98,7 @@ export async function sendEmail(req: Request, res: Response) {
                           : magnitude < 7
                           ? "#fd7e14"
                           : "#dc3545"
-                      }; font-size: 18px; font-weight: bold">${
-        aiResponse.text ||
-        (magnitude < 3
-          ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
-          : magnitude < 6
-          ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
-          : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`)
-      }</p>
+                      }; font-size: 18px; font-weight: bold">${notificationMessage}</p>
                     </td>
                   </tr>
                 </table>
@@ -141,10 +129,27 @@ export async function sendEmail(req: Request, res: Response) {
       `,
     });
 
+    let pushResult = { success: false, ticketCount: 0 };
+    try {
+      const result = await sendPushNotifications(
+        magnitude,
+        notificationMessage
+      );
+      pushResult = {
+        success: result.success,
+        ticketCount: result.tickets?.length || 0,
+      };
+    } catch (pushError) {
+      console.error("Failed to send push notifications:", pushError);
+    }
+
     res.status(200).json({
-      message: "Email sent successfully",
+      message: "Notifications sent successfully",
       statusCode: 200,
-      data: null,
+      data: {
+        email: { success: true },
+        pushNotification: pushResult,
+      },
     });
   } catch (error) {
     return res.status(500).send({
