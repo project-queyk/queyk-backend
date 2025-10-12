@@ -7,6 +7,7 @@ import {
   getUserByUserId,
   switchUserRole,
   toggleAlertNotification,
+  updateExpoPushToken,
 } from "../controllers/userController";
 
 const router = Router();
@@ -65,6 +66,17 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await switchUserRole(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:userId/push-token",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await updateExpoPushToken(req, res);
     } catch (error) {
       next(error);
     }

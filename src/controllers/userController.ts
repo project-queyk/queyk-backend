@@ -440,3 +440,78 @@ export async function switchUserRole(req: Request, res: Response) {
     });
   }
 }
+
+export async function updateExpoPushToken(req: Request, res: Response) {
+  const { userId } = req.params;
+  const { expoPushToken } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (!expoPushToken) {
+    return res.status(400).send({
+      message: "Expo push token is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ expoPushToken })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update push token",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: "Push token updated successfully",
+      statusCode: 200,
+      data: { expoPushToken: updatedUser.expoPushToken },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating push token: ${error.message}`
+          : "An unexpected error occurred while updating push token",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}

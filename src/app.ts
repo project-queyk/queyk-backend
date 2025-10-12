@@ -9,6 +9,8 @@ import rateLimit from "express-rate-limit";
 import userRouter from "./routes/users";
 import readingRouter from "./routes/readings";
 import emailRouter from "./routes/email";
+import pushNotificationRouter from "./routes/push-notifications";
+import notificationRouter from "./routes/notifications";
 import earthquakeRouter from "./routes/earthquakes";
 // import tokenRouter from "./routes/tokens";
 
@@ -53,6 +55,8 @@ app.use("/v1/api/users", limiter, userRouter);
 app.use("/v1/api/iot/readings", readingRouter);
 app.use("/v1/api/readings", limiter, readingRouter);
 app.use("/v1/api/email", emailRouter);
+app.use("/v1/api/push-notifications", pushNotificationRouter);
+app.use("/v1/api/notifications", notificationRouter);
 app.use("/v1/api/iot/earthquakes", earthquakeRouter);
 app.use("/v1/api/earthquakes", limiter, earthquakeRouter);
 
