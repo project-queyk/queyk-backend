@@ -15,7 +15,7 @@ export async function getAllNotificationEnabledPushTokens(): Promise<
   const users = await db
     .select({ token: user.expoPushToken, name: user.name })
     .from(user)
-    .where(eq(user.alertNotification, true));
+    .where(eq(user.pushNotification, true));
 
   if (!users.length) return null;
 
