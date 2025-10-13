@@ -298,6 +298,82 @@ export async function toggleAlertNotification(req: Request, res: Response) {
     });
   }
 }
+export async function toggleAlertPushNotification(req: Request, res: Response) {
+  const { userId } = req.params;
+  const { pushNotification } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (typeof pushNotification !== "boolean") {
+    return res.status(400).send({
+      message: "pushNotification must be a boolean value",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ pushNotification })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update push notification preferences",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: `Push notifications ${
+        pushNotification ? "enabled" : "disabled"
+      } successfully`,
+      statusCode: 200,
+      data: { pushNotification: updatedUser.pushNotification },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating push notification preferences: ${error.message}`
+          : "An unexpected error occurred while updating notification preferences",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
 
 export async function deleteUserByUserId(req: Request, res: Response) {
   const { userId } = req.params;

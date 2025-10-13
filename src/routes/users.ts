@@ -7,6 +7,7 @@ import {
   getUserByUserId,
   switchUserRole,
   toggleAlertNotification,
+  toggleAlertPushNotification,
   updateExpoPushToken,
 } from "../controllers/userController";
 
@@ -55,6 +56,17 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await toggleAlertNotification(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:userId/push-notifications",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await toggleAlertPushNotification(req, res);
     } catch (error) {
       next(error);
     }
