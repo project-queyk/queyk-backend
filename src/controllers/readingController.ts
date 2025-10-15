@@ -120,13 +120,28 @@ export async function getReadings(req: Request, res: Response) {
       end.setHours(15, 59, 59, 999);
 
       const firstDate = await getFirstDataDate();
-
       const batteryLevel = await getBatteryLevel();
+      const readingsRaw = await getAllStartEndReadings(start, end);
+      const readings = Array.isArray(readingsRaw)
+        ? readingsRaw.map((r) => ({
+            ...r,
+            createdAt: r.createdAt.toISOString(),
+          }))
+        : [];
 
-      const readings = await getAllStartEndReadings(start, end);
+      let actualFormattedStart = start.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      let actualFormattedEnd = end.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
 
       let prompt;
-      if (readings && readings.length > 0) {
+      if (readings.length > 0) {
         const dates = readings.map((r) => new Date(r.createdAt));
         const actualStartDate = new Date(
           Math.min(...dates.map((d) => d.getTime()))
@@ -135,15 +150,12 @@ export async function getReadings(req: Request, res: Response) {
           Math.max(...dates.map((d) => d.getTime()))
         );
 
-        const actualFormattedStart = actualStartDate.toLocaleDateString(
-          "en-US",
-          {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }
-        );
-        const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
+        actualFormattedStart = actualStartDate.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",
@@ -169,13 +181,70 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         }
       }
 
+      let peakMagnitude = { value: 0, time: "-" };
+      let avgMagnitude = "-";
+      let significantReadings = 0;
+      let peakActivity: { value: string; siAverage?: number } = { value: "-" };
+      if (readings && readings.length > 0) {
+        const peak = readings.reduce(
+          (max, r) => (r.siMaximum > max.siMaximum ? r : max),
+          readings[0]
+        );
+        peakMagnitude = {
+          value: peak.siMaximum,
+          time: new Date(peak.createdAt).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+        const avg =
+          readings.reduce((sum, r) => sum + r.siAverage, 0) / readings.length;
+        avgMagnitude = avg.toFixed(3);
+        significantReadings = readings.filter((r) => r.siAverage > 0.5).length;
+        const peakAct = readings.reduce(
+          (max, r) => (r.siAverage > max.siAverage ? r : max),
+          readings[0]
+        );
+        peakActivity = {
+          value: new Date(peakAct.createdAt).toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          siAverage: peakAct.siAverage,
+        };
+      }
+
+      const { generateSeismicReportBuffer } = await import(
+        "../lib/pdf-generator"
+      );
+      const pdfBuffer = await generateSeismicReportBuffer({
+        readings,
+        dateRange: `${actualFormattedStart} - ${actualFormattedEnd}`,
+        peakMagnitude,
+        avgMagnitude,
+        significantReadings,
+        peakActivity,
+        batteryLevel: batteryLevel?.battery || 0,
+        aiSummary:
+          typeof aiSummary === "string" ? aiSummary : aiSummary?.text || "",
+      });
+      const pdfBase64 = pdfBuffer.toString("base64");
+
       return res.status(200).send({
         message: "Readings retrieved successfully",
         statusCode: 200,
         data: readings,
         firstDate: firstDate?.firstDate,
         batteryLevel: batteryLevel?.battery,
-        aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
+        aiSummary:
+          typeof aiSummary === "string" ? aiSummary : aiSummary?.text || "",
+        pdfBase64,
       });
     }
 
