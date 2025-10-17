@@ -92,8 +92,12 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
 
       const [start, end] = data.dateRange.split(" to ");
       const startPHT = formatToPHT(start);
-      const endPHT = formatToPHT(end);
-      doc.text(`Report Period: ${startPHT} to ${endPHT}`, 20, yPosition);
+      let reportPeriodText = startPHT;
+      if (end && end.trim() && end.trim().toLowerCase() !== "undefined") {
+        const endPHT = formatToPHT(end);
+        reportPeriodText += ` to ${endPHT}`;
+      }
+      doc.text(`Report Period: ${reportPeriodText}`, 20, yPosition);
       yPosition += 7;
       doc.text(
         `Generated: ${new Date().toLocaleString("en-US", {
