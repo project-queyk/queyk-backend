@@ -133,11 +133,13 @@ export async function getReadings(req: Request, res: Response) {
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "Asia/Manila",
       });
       let actualFormattedEnd = end.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
+        timeZone: "Asia/Manila",
       });
 
       let prompt;
