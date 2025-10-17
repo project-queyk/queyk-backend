@@ -83,13 +83,16 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
         colors.mutedText[1],
         colors.mutedText[2]
       );
+      function formatToPHT(dateStr: string) {
+        const date = new Date(dateStr);
+        return isNaN(date.getTime())
+          ? dateStr
+          : date.toLocaleString("en-US", { timeZone: "Asia/Manila" });
+      }
+
       const [start, end] = data.dateRange.split(" to ");
-      const startPHT = new Date(start).toLocaleString("en-US", {
-        timeZone: "Asia/Manila",
-      });
-      const endPHT = new Date(end).toLocaleString("en-US", {
-        timeZone: "Asia/Manila",
-      });
+      const startPHT = formatToPHT(start);
+      const endPHT = formatToPHT(end);
       doc.text(`Report Period: ${startPHT} to ${endPHT}`, 20, yPosition);
       yPosition += 7;
       doc.text(
