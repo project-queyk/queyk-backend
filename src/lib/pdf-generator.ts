@@ -83,7 +83,14 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
         colors.mutedText[1],
         colors.mutedText[2]
       );
-      doc.text(`Report Period: ${data.dateRange}`, 20, yPosition);
+      const [start, end] = data.dateRange.split(" to ");
+      const startPHT = new Date(start).toLocaleString("en-US", {
+        timeZone: "Asia/Manila",
+      });
+      const endPHT = new Date(end).toLocaleString("en-US", {
+        timeZone: "Asia/Manila",
+      });
+      doc.text(`Report Period: ${startPHT} to ${endPHT}`, 20, yPosition);
       yPosition += 7;
       doc.text(
         `Generated: ${new Date().toLocaleString("en-US", {
@@ -115,7 +122,9 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       const summaryData = [
         [
           "Peak SI Maximum",
-          `${data.peakMagnitude.value.toFixed(3)} @ ${data.peakMagnitude.time}`,
+          `${data.peakMagnitude.value.toFixed(3)} @ ${new Date(
+            data.peakMagnitude.time
+          ).toLocaleString("en-US", { timeZone: "Asia/Manila" })}`,
         ],
         ["Average SI Reading", data.avgMagnitude],
         [
@@ -124,7 +133,9 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
         ],
         [
           "Peak Activity Time",
-          `${data.peakActivity.value}${
+          `${new Date(data.peakActivity.value).toLocaleString("en-US", {
+            timeZone: "Asia/Manila",
+          })}${
             data.peakActivity.siAverage
               ? ` (${data.peakActivity.siAverage.toFixed(3)} SI)`
               : ""
