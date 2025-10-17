@@ -166,6 +166,7 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            timeZone: "Asia/Manila",
           }),
           reading.siAverage.toFixed(3),
           reading.siMaximum.toFixed(3),
