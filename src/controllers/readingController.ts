@@ -133,13 +133,11 @@ export async function getReadings(req: Request, res: Response) {
         year: "numeric",
         month: "long",
         day: "numeric",
-        timeZone: "Asia/Manila",
       });
       let actualFormattedEnd = end.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
-        timeZone: "Asia/Manila",
       });
 
       let prompt;
@@ -156,11 +154,13 @@ export async function getReadings(req: Request, res: Response) {
           year: "numeric",
           month: "long",
           day: "numeric",
+          timeZone: "Asia/Manila",
         });
         actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
           year: "numeric",
           month: "long",
           day: "numeric",
+          timeZone: "Asia/Manila",
         });
 
         prompt = `Analyze these seismic readings from ${actualFormattedStart} to ${actualFormattedEnd}:
