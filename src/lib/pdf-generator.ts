@@ -59,7 +59,6 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       if (iccLogo) {
         doc.addImage(iccLogo, "PNG", pageWidth - 18, 5, 8, 8);
       }
-      console.log("ICC Logo base64 start:", iccLogo.slice(0, 20));
 
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
@@ -86,7 +85,13 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       );
       doc.text(`Report Period: ${data.dateRange}`, 20, yPosition);
       yPosition += 7;
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 20, yPosition);
+      doc.text(
+        `Generated: ${new Date().toLocaleString("en-US", {
+          timeZone: "Asia/Manila",
+        })}`,
+        20,
+        yPosition
+      );
       yPosition += 15;
 
       doc.setFontSize(18);
