@@ -192,7 +192,7 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
           fontStyle: "bold",
         },
         columnStyles: {
-          0: { cellWidth: 35 },
+          0: { cellWidth: 50 },
           1: { halign: "center", cellWidth: 20 },
           2: { halign: "center", cellWidth: 20 },
           3: { halign: "center", cellWidth: 20 },
