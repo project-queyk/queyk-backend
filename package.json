@@ -41,6 +41,7 @@
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
     "postgres": "^3.4.7",
+    "web-push": "^3.6.7",
     "zod": "^4.0.17"
   },
   "devDependencies": {
@@ -48,6 +49,7 @@
     "@types/express": "^5.0.3",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.2.1",
+    "@types/web-push": "^3.6.4",
     "drizzle-kit": "^0.31.4",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",

@@ -2,6 +2,7 @@ import {
   boolean,
   doublePrecision,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -21,6 +22,7 @@ export const user = pgTable("user", {
   alertNotification: boolean("alert_notification").default(true).notNull(),
   pushNotification: boolean("push_notification").default(false).notNull(),
   expoPushToken: text("expo_push_token"),
+  webPushSubscription: jsonb("web_push_subscription"),
   role: roleEnum("role").default("user").notNull(),
   oauthId: text("oauth_id").notNull(),
   createdAt: timestamp("created_at")

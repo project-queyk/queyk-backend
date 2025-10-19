@@ -1,7 +1,10 @@
 import { config } from "dotenv";
+import { eq } from "drizzle-orm";
 import { Request, Response } from "express";
 
 import { verifyToken } from "../lib/auth";
+import { db } from "../drizzle";
+import { user } from "../drizzle/schema";
 import generateResponse from "../lib/service/gemini";
 import { sendPushNotifications } from "../lib/service/push-notification-service";
 
@@ -74,6 +77,72 @@ export async function sendPushNotification(req: Request, res: Response) {
         error instanceof Error
           ? error.message
           : "There was an error sending the push notification.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function subscribeWebPush(req: Request, res: Response) {
+  const { subscription, userId } = req.body;
+
+  if (!subscription || !userId) {
+    return res.status(400).send({
+      message: "Subscription and userId are required",
+      error: "BadRequest",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    await db
+      .update(user)
+      .set({ webPushSubscription: subscription })
+      .where(eq(user.id, userId));
+
+    res.status(200).json({
+      message: "Web push subscription saved successfully",
+      statusCode: 200,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? error.message
+          : "There was an error saving the subscription.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function unsubscribeWebPush(req: Request, res: Response) {
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "userId is required",
+      error: "BadRequest",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    await db
+      .update(user)
+      .set({ webPushSubscription: null })
+      .where(eq(user.id, userId));
+
+    res.status(200).json({
+      message: "Web push subscription removed successfully",
+      statusCode: 200,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? error.message
+          : "There was an error removing the subscription.",
       error: "Internal Server Error",
       statusCode: 500,
     });
