@@ -60,8 +60,7 @@ app.use("/v1/api/push-notifications", pushNotificationRouter);
 app.use("/v1/api/notifications", notificationRouter);
 app.use("/v1/api/iot/earthquakes", earthquakeRouter);
 app.use("/v1/api/earthquakes", limiter, earthquakeRouter);
-
-app.use("/v1/api/iot", iotRouter);
+app.use("/v1/api/iot/device", iotRouter);
 
 // app.use("/v1/api/tokens", tokenRouter);
 
