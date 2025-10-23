@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 import { Request, Response } from "express";
-import { eq, ilike, count, desc } from "drizzle-orm";
+import { eq, ilike, count, desc, and, isNotNull } from "drizzle-orm";
 
 import { db } from "../drizzle";
 import { verifyToken } from "../lib/auth";
@@ -8,6 +8,7 @@ import { user } from "../drizzle/schema";
 import { formatZodError } from "../lib/utils";
 import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 import { schoolEmailSchema, tokenTypeUnionSchema } from "../lib/schema";
+import { mobilePhoneNumberSchema } from "../types/users";
 
 config({ path: ".env.local" });
 
@@ -586,6 +587,210 @@ export async function updateExpoPushToken(req: Request, res: Response) {
         error instanceof Error
           ? `Error updating push token: ${error.message}`
           : "An unexpected error occurred while updating push token",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function getAllUserPhoneNumbers(req: Request, res: Response) {
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const data = await db
+      .select()
+      .from(user)
+      .where(and(eq(user.smsNotification, true), isNotNull(user.phoneNumber)));
+
+    if (!data?.length) {
+      return res.status(404).send({
+        message: "No users with phone numbers found in the database",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: "Users phone numbers retrieved successfully",
+      statusCode: 200,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? error.message
+          : "There was an error retrieving users phone numbers.",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function updateUserSMSPhoneNumber(req: Request, res: Response) {
+  const { userId } = req.params;
+  const { phoneNumber } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (!phoneNumber) {
+    return res.status(400).send({
+      message: "Phone number is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  const isValidPhoneNumber = mobilePhoneNumberSchema.safeParse(phoneNumber);
+
+  if (isValidPhoneNumber.error) {
+    return res.status(400).send({
+      message: formatZodError(isValidPhoneNumber.error),
+      error: "Invalid Phone Number",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ phoneNumber: isValidPhoneNumber.data })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update phone number",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: "Phone number updated successfully",
+      statusCode: 200,
+      data: { phoneNumber: updatedUser.phoneNumber },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating push token: ${error.message}`
+          : "An unexpected error occurred while updating phone number",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
+export async function toggleAlertSMSNotification(req: Request, res: Response) {
+  const { userId } = req.params;
+  const { smsNotification } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (typeof smsNotification !== "boolean") {
+    return res.status(400).send({
+      message: "smsNotification must be a boolean value",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ smsNotification })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update sms notification preferences",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: `Push notifications ${
+        smsNotification ? "enabled" : "disabled"
+      } successfully`,
+      statusCode: 200,
+      data: { smsNotification: updatedUser.smsNotification },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating sms notification preferences: ${error.message}`
+          : "An unexpected error occurred while updating notification preferences",
       error: "Internal Server Error",
       statusCode: 500,
     });

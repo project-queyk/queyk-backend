@@ -3,12 +3,15 @@ import { Router, Request, Response, NextFunction } from "express";
 import {
   createUser,
   deleteUserByUserId,
+  getAllUserPhoneNumbers,
   getAllUsers,
   getUserByUserId,
   switchUserRole,
   toggleAlertNotification,
   toggleAlertPushNotification,
+  toggleAlertSMSNotification,
   updateExpoPushToken,
+  updateUserSMSPhoneNumber,
 } from "../controllers/userController";
 
 const router = Router();
@@ -28,6 +31,17 @@ router.get("/", async (req: Request, res: Response, next: NextFunction) => {
     next(error);
   }
 });
+
+router.get(
+  "/phone-numbers",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await getAllUserPhoneNumbers(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get(
   "/:userId",
@@ -89,6 +103,28 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await updateExpoPushToken(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:userId/phone-number",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await updateUserSMSPhoneNumber(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.get(
+  "/:userId/sms-notifications",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await toggleAlertSMSNotification(req, res);
     } catch (error) {
       next(error);
     }
