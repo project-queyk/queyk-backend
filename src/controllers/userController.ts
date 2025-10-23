@@ -606,7 +606,7 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
     }
 
     const data = await db
-      .select()
+      .select({ phoneNumber: user.phoneNumber })
       .from(user)
       .where(and(eq(user.smsNotification, true), isNotNull(user.phoneNumber)));
 
@@ -621,7 +621,7 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
     return res.status(200).send({
       message: "Users phone numbers retrieved successfully",
       statusCode: 200,
-      data,
+      data: data.map((phoneNumbers) => phoneNumbers.phoneNumber),
     });
   } catch (error) {
     return res.status(500).send({

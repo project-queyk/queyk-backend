@@ -120,7 +120,7 @@ router.patch(
   }
 );
 
-router.get(
+router.patch(
   "/:userId/sms-notifications",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
