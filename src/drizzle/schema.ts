@@ -25,6 +25,8 @@ export const user = pgTable("user", {
   webPushSubscription: jsonb("web_push_subscription"),
   role: roleEnum("role").default("user").notNull(),
   oauthId: text("oauth_id").notNull(),
+  smsNotification: boolean("sms_notification").default(false).notNull(),
+  phoneNumber: text("phone_number"),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date()),
