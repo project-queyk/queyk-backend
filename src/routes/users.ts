@@ -3,6 +3,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import {
   createUser,
   deleteUserByUserId,
+  deleteUserSMSPhoneNumber,
   getAllUserPhoneNumbers,
   getAllUsers,
   getUserByUserId,
@@ -114,6 +115,17 @@ router.patch(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await updateUserSMSPhoneNumber(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.delete(
+  "/:userId/phone-number",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await deleteUserSMSPhoneNumber(req, res);
     } catch (error) {
       next(error);
     }

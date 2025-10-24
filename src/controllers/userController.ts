@@ -720,6 +720,75 @@ export async function updateUserSMSPhoneNumber(req: Request, res: Response) {
   }
 }
 
+export async function deleteUserSMSPhoneNumber(req: Request, res: Response) {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ phoneNumber: null, smsNotification: false })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to delete phone number",
+        error: "Delete Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: "Phone number deleted successfully",
+      statusCode: 200,
+      data: {
+        phoneNumber: updatedUser.phoneNumber,
+        smsNotification: updatedUser.smsNotification,
+      },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating push token: ${error.message}`
+          : "An unexpected error occurred while deleting phone number",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}
+
 export async function toggleAlertSMSNotification(req: Request, res: Response) {
   const { userId } = req.params;
   const { smsNotification } = req.body;
