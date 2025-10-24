@@ -172,15 +172,20 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
       }
 
       let aiSummary;
-      try {
-        aiSummary = await generateResponse(prompt, systemInstruction);
-      } catch (error: any) {
-        if (error.status === 429) {
-          aiSummary =
-            "AI analysis is temporarily unavailable due to high demand. Please try again later.";
-        } else {
-          aiSummary = "AI analysis is currently unavailable.";
+      if (readings.length) {
+        try {
+          aiSummary = await generateResponse(prompt, systemInstruction);
+        } catch (error: any) {
+          if (error.status === 429) {
+            aiSummary =
+              "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+          } else {
+            aiSummary = "AI analysis is currently unavailable.";
+          }
         }
+      } else {
+        aiSummary =
+          "No AI summary available because there are no seismic readings for the selected period.";
       }
 
       let peakMagnitude = { value: 0, time: "-" };
