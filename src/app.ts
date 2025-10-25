@@ -52,7 +52,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/v1/api/users", limiter, userRouter);
+app.use("/v1/api/users", userRouter);
 app.use("/v1/api/iot/readings", readingRouter);
 app.use("/v1/api/readings", limiter, readingRouter);
 app.use("/v1/api/email", emailRouter);
