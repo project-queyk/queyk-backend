@@ -38,12 +38,21 @@ export async function getFirstDataDate() {
 
 export async function getBatteryLevel() {
   const [readings] = await db
-    .select({ battery: reading.battery })
+    .select({ battery: reading.battery, createdAt: reading.createdAt })
     .from(reading)
     .orderBy(desc(reading.createdAt))
     .limit(1);
 
   if (!readings) return null;
+
+  const now = new Date();
+  const lastReadingDate = new Date(readings.createdAt);
+  const diffMs = now.getTime() - lastReadingDate.getTime();
+  const diffMinutes = diffMs / (1000 * 60);
+
+  if (diffMinutes > 6) {
+    return null;
+  }
 
   return readings;
 }
