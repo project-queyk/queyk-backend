@@ -46,7 +46,8 @@ export async function sendEmail(req: Request, res: Response) {
       try {
         await transporter.sendMail({
           from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
-          to: emails.map((user) => user.email),
+          to: process.env.APP_GMAIL_EMAIL,
+          bcc: emails.map((user) => user.email),
           subject: `Earthquake Alert: Magnitude ${magnitude} Detected`,
           html: `
             <!DOCTYPE html>
