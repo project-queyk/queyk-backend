@@ -56,7 +56,7 @@ export const reading = pgTable("reading", {
 
 export const earthquake = pgTable("earthquake", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
-  magnitude: doublePrecision("magnitude").notNull(),
+  intensity: doublePrecision("intensity").notNull(),
   duration: integer("duration").notNull(),
   createdAt: timestamp("created_at")
     .notNull()

@@ -12,14 +12,14 @@ import { sendPushNotifications } from "../lib/service/push-notification-service"
 config({ path: ".env.local" });
 
 const systemInstruction =
-  "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated magnitude [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
+  "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated intensity [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
 
 export async function sendAllNotifications(req: Request, res: Response) {
-  const { magnitude } = req.body;
+  const { intensity } = req.body;
 
-  if (!magnitude) {
+  if (!intensity) {
     return res.status(400).send({
-      message: "Earthquake magnitude is required for the alert",
+      message: "Earthquake intensity is required for the alert",
       error: "BadRequest",
       statusCode: 400,
     });
@@ -36,7 +36,7 @@ export async function sendAllNotifications(req: Request, res: Response) {
       });
     }
 
-    const contents = `An earthquake with magnitude ${magnitude} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
+    const contents = `An earthquake with intensity ${intensity} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
 
     let aiResponse;
     try {
@@ -47,11 +47,11 @@ export async function sendAllNotifications(req: Request, res: Response) {
 
     const notificationMessage =
       aiResponse.text ||
-      (magnitude < 3
-        ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
-        : magnitude < 6
-        ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
-        : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`);
+      (intensity < 3
+        ? `Estimated intensity ${intensity} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
+        : intensity < 6
+        ? `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
+        : `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`);
 
     const results = {
       email: { success: false, error: null as string | null },
@@ -69,7 +69,7 @@ export async function sendAllNotifications(req: Request, res: Response) {
         await transporter.sendMail({
           from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
           to: emails.map((user) => user.email),
-          subject: `Earthquake Alert: Magnitude ${magnitude} Detected`,
+          subject: `Earthquake Alert: Intensity ${intensity} Detected`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -108,11 +108,11 @@ export async function sendAllNotifications(req: Request, res: Response) {
                       <tr>
                         <td style="padding: 20px;">
                           <p style="margin: 0; color: ${
-                            magnitude < 3
+                            intensity < 3
                               ? "#28a745"
-                              : magnitude < 5
+                              : intensity < 5
                               ? "#ffc107"
-                              : magnitude < 7
+                              : intensity < 7
                               ? "#fd7e14"
                               : "#dc3545"
                           }; font-size: 18px; font-weight: bold">${notificationMessage}</p>
@@ -157,7 +157,7 @@ export async function sendAllNotifications(req: Request, res: Response) {
 
     try {
       const pushResult = await sendPushNotifications(
-        magnitude,
+        intensity,
         notificationMessage
       );
       results.pushNotification.success = pushResult.success;

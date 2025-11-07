@@ -73,7 +73,7 @@ export const createReadingSchema = readingSchema.omit({
 
 export const earthquakeSchema = z.object({
   id: z.uuid(),
-  magnitude: z.number(),
+  intensity: z.number(),
   duration: z.number(),
   createdAt: z.date(),
 });
