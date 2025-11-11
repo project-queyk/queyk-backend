@@ -15,6 +15,8 @@ import {
   updateUserSMSPhoneNumber,
 } from "../controllers/userController";
 
+let isSMSNotificationPreferencesUpdated = false;
+
 const router = Router();
 
 router.post("/", async (req: Request, res: Response, next: NextFunction) => {
@@ -43,6 +45,16 @@ router.get(
     }
   }
 );
+
+router.get("/phone-numbers-status", (req, res) => {
+  res.json({ isSMSNotificationPreferencesUpdated });
+  isSMSNotificationPreferencesUpdated = false;
+});
+
+router.post("/phone-numbers-reset", (req, res) => {
+  isSMSNotificationPreferencesUpdated = false;
+  res.json({ message: "SMS notification preferences reset" });
+});
 
 router.get(
   "/:userId",
@@ -114,6 +126,7 @@ router.patch(
   "/:userId/phone-number",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      isSMSNotificationPreferencesUpdated = true;
       await updateUserSMSPhoneNumber(req, res);
     } catch (error) {
       next(error);
@@ -125,6 +138,7 @@ router.delete(
   "/:userId/phone-number",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      isSMSNotificationPreferencesUpdated = true;
       await deleteUserSMSPhoneNumber(req, res);
     } catch (error) {
       next(error);
@@ -136,6 +150,7 @@ router.patch(
   "/:userId/sms-notifications",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      isSMSNotificationPreferencesUpdated = true;
       await toggleAlertSMSNotification(req, res);
     } catch (error) {
       next(error);
