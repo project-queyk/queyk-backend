@@ -22,8 +22,8 @@ export interface ReadingData {
 export interface ReportData {
   readings: ReadingData[];
   dateRange: string;
-  peakIntensity: { value: number; time: string };
-  avgIntensity: string;
+  peakMagnitude: { value: number; time: string };
+  avgMagnitude: string;
   significantReadings: number;
   peakActivity: { value: string; siAverage?: number };
   batteryLevel: number;
@@ -129,11 +129,11 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       const summaryData = [
         [
           "Peak SI Maximum",
-          `${data.peakIntensity.value.toFixed(3)} @ ${new Date(
-            data.peakIntensity.time
+          `${data.peakMagnitude.value.toFixed(3)} @ ${new Date(
+            data.peakMagnitude.time
           ).toLocaleString("en-US", { timeZone: "Asia/Manila" })}`,
         ],
-        ["Average SI Reading", data.avgIntensity],
+        ["Average SI Reading", data.avgMagnitude],
         [
           "Significant Activity Readings",
           `${data.significantReadings} readings`,

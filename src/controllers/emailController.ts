@@ -11,11 +11,11 @@ import { sendPushNotifications } from "../lib/service/push-notification-service"
 config({ path: ".env.local" });
 
 export async function sendEmail(req: Request, res: Response) {
-  const { intensity } = req.body;
+  const { magnitude } = req.body;
 
-  if (!intensity) {
+  if (!magnitude) {
     return res.status(400).send({
-      message: "Earthquake intensity is required for the alert email",
+      message: "Earthquake magnitude is required for the alert email",
       error: "BadRequest",
       statusCode: 400,
     });
@@ -35,11 +35,11 @@ export async function sendEmail(req: Request, res: Response) {
     const emails = await getAllNotificationEnabledEmails();
 
     const notificationMessage =
-      intensity < 3
-        ? `Estimated intensity ${intensity} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
-        : intensity < 6
-        ? `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
-        : `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`;
+      magnitude < 3
+        ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
+        : magnitude < 6
+        ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
+        : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`;
 
     let emailSuccess = false;
     if (emails && emails.length > 0) {
@@ -48,7 +48,7 @@ export async function sendEmail(req: Request, res: Response) {
           from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
           to: process.env.APP_GMAIL_EMAIL,
           bcc: emails.map((user) => user.email),
-          subject: `Earthquake Alert: Intensity ${intensity} Detected`,
+          subject: `Earthquake Alert: Magnitude ${magnitude} Detected`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -87,11 +87,11 @@ export async function sendEmail(req: Request, res: Response) {
                       <tr>
                         <td style="padding: 20px;">
                           <p style="margin: 0; color: ${
-                            intensity < 3
+                            magnitude < 3
                               ? "#28a745"
-                              : intensity < 5
+                              : magnitude < 5
                               ? "#ffc107"
-                              : intensity < 7
+                              : magnitude < 7
                               ? "#fd7e14"
                               : "#dc3545"
                           }; font-size: 18px; font-weight: bold">${notificationMessage}</p>
@@ -133,7 +133,7 @@ export async function sendEmail(req: Request, res: Response) {
     let pushResult = { success: false, ticketCount: 0 };
     try {
       const result = await sendPushNotifications(
-        intensity,
+        magnitude,
         notificationMessage
       );
       pushResult = {

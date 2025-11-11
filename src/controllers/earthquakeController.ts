@@ -14,7 +14,7 @@ import generateResponse from "../lib/service/gemini";
 
 const systemInstruction = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Generate a concise professional summary that includes:
 - Historical earthquake activity assessment
-- Analysis of intensity patterns and frequency
+- Analysis of magnitude patterns and frequency
 - Notable trends or clusters in earthquake occurrences
 - Risk evaluation and safety insights based on historical data
 Keep response under 150 words and maintain a calm, informative tone.
@@ -22,10 +22,10 @@ IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying date
 Write naturally as if you are directly reporting on seismic activity without referencing datasets or data sources. Present findings as direct observations.`;
 
 export async function createEarthquake(req: Request, res: Response) {
-  const { intensity, duration } = req.body;
+  const { magnitude, duration } = req.body;
 
   const missingFields = [];
-  if (intensity == null) missingFields.push("intensity");
+  if (magnitude == null) missingFields.push("magnitude");
   if (duration == null) missingFields.push("duration");
 
   if (missingFields.length > 0) {
@@ -37,7 +37,7 @@ export async function createEarthquake(req: Request, res: Response) {
   }
 
   const earthquakeValues = {
-    intensity,
+    magnitude,
     duration,
   };
 

@@ -188,8 +188,8 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
           "No AI summary available because there are no seismic readings for the selected period.";
       }
 
-      let peakIntensity = { value: 0, time: "-" };
-      let avgIntensity = "-";
+      let peakMagnitude = { value: 0, time: "-" };
+      let avgMagnitude = "-";
       let significantReadings = 0;
       let peakActivity: { value: string; siAverage?: number } = { value: "-" };
       if (readings && readings.length > 0) {
@@ -197,7 +197,7 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
           (max, r) => (r.siMaximum > max.siMaximum ? r : max),
           readings[0]
         );
-        peakIntensity = {
+        peakMagnitude = {
           value: peak.siMaximum,
           time: new Date(peak.createdAt).toLocaleString("en-US", {
             month: "short",
@@ -209,7 +209,7 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         };
         const avg =
           readings.reduce((sum, r) => sum + r.siAverage, 0) / readings.length;
-        avgIntensity = avg.toFixed(3);
+        avgMagnitude = avg.toFixed(3);
         significantReadings = readings.filter((r) => r.siAverage > 0.5).length;
         const peakAct = readings.reduce(
           (max, r) => (r.siAverage > max.siAverage ? r : max),
@@ -233,8 +233,8 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
       const pdfBuffer = await generateSeismicReportBuffer({
         readings,
         dateRange: `${actualFormattedStart} - ${actualFormattedEnd}`,
-        peakIntensity,
-        avgIntensity,
+        peakMagnitude,
+        avgMagnitude,
         significantReadings,
         peakActivity,
         batteryLevel: batteryLevel?.battery || 0,

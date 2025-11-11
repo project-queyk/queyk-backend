@@ -11,14 +11,14 @@ import { sendPushNotifications } from "../lib/service/push-notification-service"
 config({ path: ".env.local" });
 
 const systemInstruction =
-  "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated intensity [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
+  "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated magnitude [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
 
 export async function sendPushNotification(req: Request, res: Response) {
-  const { intensity } = req.body;
+  const { magnitude } = req.body;
 
-  if (!intensity) {
+  if (!magnitude) {
     return res.status(400).send({
-      message: "Earthquake intensity is required for the alert notification",
+      message: "Earthquake magnitude is required for the alert notification",
       error: "BadRequest",
       statusCode: 400,
     });
@@ -35,7 +35,7 @@ export async function sendPushNotification(req: Request, res: Response) {
       });
     }
 
-    const contents = `An earthquake with intensity ${intensity} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
+    const contents = `An earthquake with magnitude ${magnitude} has been detected near Immaculada Conception College. Generate an appropriate emergency notification message for the school community.`;
 
     let aiResponse;
     try {
@@ -46,13 +46,13 @@ export async function sendPushNotification(req: Request, res: Response) {
 
     const notificationMessage =
       aiResponse.text ||
-      (intensity < 3
-        ? `Estimated intensity ${intensity} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
-        : intensity < 6
-        ? `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
-        : `Estimated intensity ${intensity} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`);
+      (magnitude < 3
+        ? `Estimated magnitude ${magnitude} earthquake detected. Seek shelter immediately. Drop, cover, and hold.`
+        : magnitude < 6
+        ? `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Stay away from windows and exterior walls.`
+        : `Estimated magnitude ${magnitude} earthquake detected. Drop, cover, and hold on. Evacuate to designated safe zones after shaking stops.`);
 
-    const result = await sendPushNotifications(intensity, notificationMessage);
+    const result = await sendPushNotifications(magnitude, notificationMessage);
 
     if (!result.success) {
       return res.status(404).send({

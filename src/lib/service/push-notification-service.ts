@@ -60,7 +60,7 @@ export async function getAllNotificationEnabledWebPushSubscriptions(): Promise<
 }
 
 export async function sendPushNotifications(
-  intensity: number,
+  magnitude: number,
   message: string
 ): Promise<{ success: boolean; tickets?: ExpoPushTicket[]; error?: string }> {
   try {
@@ -77,9 +77,9 @@ export async function sendPushNotifications(
         messages.push({
           to: token,
           sound: "default",
-          title: `🚨 Earthquake Alert: Intensity ${intensity}`,
+          title: `🚨 Earthquake Alert: Magnitude ${magnitude}`,
           body: message,
-          data: { intensity, type: "earthquake" },
+          data: { magnitude, type: "earthquake" },
           priority: "high",
           channelId: "earthquake-alerts",
         });
@@ -102,10 +102,10 @@ export async function sendPushNotifications(
 
     if (subscriptions && subscriptions.length) {
       const notificationPayload = JSON.stringify({
-        title: `🚨 Earthquake Alert: Intensity ${intensity}`,
+        title: `🚨 Earthquake Alert: Magnitude ${magnitude}`,
         body: message,
         icon: "/icon.png",
-        data: { intensity, type: "earthquake" },
+        data: { magnitude, type: "earthquake" },
       });
 
       for (const { subscription } of subscriptions) {
