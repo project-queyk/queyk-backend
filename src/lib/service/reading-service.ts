@@ -46,9 +46,12 @@ export async function getBatteryLevel() {
   if (!readings) return null;
 
   const now = new Date();
-  const lastReadingDate = new Date(readings.createdAt);
+  const lastReadingDate =
+    readings.createdAt instanceof Date
+      ? readings.createdAt
+      : new Date(readings.createdAt);
   const diffMs = now.getTime() - lastReadingDate.getTime();
-  const diffMinutes = diffMs / (1000 * 60);
+  const diffMinutes = Math.abs(diffMs) / (1000 * 60);
 
   if (diffMinutes > 6) {
     return null;
