@@ -70,6 +70,26 @@ export async function sendAllNotifications(req: Request, res: Response) {
           from: `"Queyk" <${process.env.APP_GMAIL_EMAIL}>`,
           to: emails.map((user) => user.email),
           subject: `Earthquake Alert: Magnitude ${magnitude} Detected`,
+          text: `Dear Immaculadians,
+
+Our seismic monitoring system has detected earthquake activity with magnitude ${magnitude} that may affect our campus.
+
+${notificationMessage}
+
+Please follow these safety protocols:
+- Follow the school's earthquake safety procedures
+- Proceed to designated evacuation areas if instructed  
+- Listen for announcements from school personnel
+- Stay calm and assist others as needed
+- Wait for all-clear signals before resuming activities
+
+Emergency Contacts:
+- School Clinic: 09755721421
+- School Security: 09569114566  
+- Facilities Management: 09460548474
+
+Stay safe,
+Queyk Alert System`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -80,20 +100,19 @@ export async function sendAllNotifications(req: Request, res: Response) {
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #212529; background-color: #f1f3f5; margin: 0; padding: 20px;">
               <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; border: 1px solid #e9ecef; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                 <!-- Header -->
-               <tr>
+                <tr>
                   <td style="background: linear-gradient(135deg, #193867 0%, #35507a 100%); background-color: #193867; padding: 30px 20px; border-radius: 12px 12px 0 0;">
-                    <!-- Logo placeholder - Replace with permanent hosted image URL -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 15px;">
                       <tr>
                         <td align="left" valign="middle">
-                          <img src="https://www.queyk.com/queyk-logo-white.png" alt="QUEYK" style="width: 100px; height: 30px; display: block;" />
+                          <div></div>
                         </td>
                         <td align="right" valign="middle">
-                          <img src="https://elc-public-images.s3.ap-southeast-1.amazonaws.com/icc-logo.png" alt="ICC" style="width: 30px; height: 30px; display: block;" />
+                          <div></div>
                         </td>
                       </tr>
                     </table>
-                    <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffd43b; text-align: center; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);">🚨 Earthquake Alert</h1>
+                    <h1 style="margin: 0; font-size: 28px; font-weight: bold; color: #ffd43b; text-align: center; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);">Seismic Activity Alert</h1>
                   </td>
                 </tr>
                 
@@ -101,7 +120,7 @@ export async function sendAllNotifications(req: Request, res: Response) {
                 <tr>
                   <td style="padding: 30px;">
                     <p style="margin: 0 0 16px 0; color: #212529; font-size: 16px;">Dear Immaculadians,</p>
-                    <p style="margin: 0 0 16px 0; color: #212529; font-size: 16px;">Our seismic monitoring system has detected earthquake activity that may affect our campus. This automated alert is being sent to ensure the safety of all students, faculty, and staff.</p>
+                    <p style="margin: 0 0 16px 0; color: #212529; font-size: 16px;">Our seismic monitoring system has detected earthquake activity that may affect our campus. This automated notification is being sent to ensure the safety of all students, faculty, and staff.</p>
                     
                     <!-- Alert Section -->
                     <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border-radius: 12px; margin: 20px 0; border: 1px solid #e9ecef">
