@@ -865,3 +865,80 @@ export async function toggleAlertSMSNotification(req: Request, res: Response) {
     });
   }
 }
+
+export async function updateIsInSchool(req: Request, res: Response) {
+  const { userId } = req.params;
+  const { isInSchool } = req.body;
+
+  if (!userId) {
+    return res.status(400).send({
+      message: "User ID is required",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  if (typeof isInSchool !== "boolean") {
+    return res.status(400).send({
+      message: "isInSchool must be a boolean value",
+      error: "Bad Request",
+      statusCode: 400,
+    });
+  }
+
+  try {
+    const isValidToken = await verifyToken(req);
+
+    if (!isValidToken?.isValidToken) {
+      return res.status(401).send({
+        message: "Invalid or expired authentication token",
+        error: "Unauthorized",
+        statusCode: 401,
+      });
+    }
+
+    const [userExists] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId));
+
+    if (!userExists) {
+      return res.status(404).send({
+        message: "User not found",
+        error: "Not Found",
+        statusCode: 404,
+      });
+    }
+
+    const [updatedUser] = await db
+      .update(user)
+      .set({ isInSchool })
+      .where(eq(user.id, userId))
+      .returning();
+
+    if (!updatedUser) {
+      return res.status(404).send({
+        message: "Failed to update school status",
+        error: "Update Failed",
+        statusCode: 404,
+      });
+    }
+
+    return res.status(200).send({
+      message: `School status updated to ${
+        isInSchool ? "in school" : "out of school"
+      } successfully`,
+      statusCode: 200,
+      data: { isInSchool: updatedUser.isInSchool },
+    });
+  } catch (error) {
+    return res.status(500).send({
+      message:
+        error instanceof Error
+          ? `Error updating school status: ${error.message}`
+          : "An unexpected error occurred while updating school status",
+      error: "Internal Server Error",
+      statusCode: 500,
+    });
+  }
+}

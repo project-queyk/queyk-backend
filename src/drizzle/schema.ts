@@ -27,6 +27,7 @@ export const user = pgTable("user", {
   oauthId: text("oauth_id").notNull(),
   smsNotification: boolean("sms_notification").default(false).notNull(),
   phoneNumber: text("phone_number"),
+  isInSchool: boolean("is_in_school"),
   createdAt: timestamp("created_at")
     .notNull()
     .$defaultFn(() => new Date()),

@@ -15,5 +15,8 @@ export async function getUserByEmailAndOauthId(
 
   if (!foundUser) return null;
 
-  return foundUser;
+  return {
+    ...foundUser,
+    isInSchool: foundUser.isInSchool ?? false,
+  };
 }

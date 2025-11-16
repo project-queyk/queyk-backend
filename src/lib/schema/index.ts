@@ -33,6 +33,7 @@ export const userSchema = z.object({
   createdAt: z.date(),
   role: z.union(roleUnion),
   oauthId: z.string(),
+  isInSchool: z.boolean(),
 });
 
 export const createUserSchema = userSchema.omit({

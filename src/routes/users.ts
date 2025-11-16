@@ -12,6 +12,7 @@ import {
   toggleAlertPushNotification,
   toggleAlertSMSNotification,
   updateExpoPushToken,
+  updateIsInSchool,
   updateUserSMSPhoneNumber,
 } from "../controllers/userController";
 
@@ -152,6 +153,18 @@ router.patch(
     try {
       isSMSNotificationPreferencesUpdated = true;
       await toggleAlertSMSNotification(req, res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+router.patch(
+  "/:userId/location-status",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      isSMSNotificationPreferencesUpdated = true;
+      await updateIsInSchool(req, res);
     } catch (error) {
       next(error);
     }
