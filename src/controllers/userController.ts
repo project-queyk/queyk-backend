@@ -608,7 +608,13 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
     const data = await db
       .select({ phoneNumber: user.phoneNumber })
       .from(user)
-      .where(and(eq(user.smsNotification, true), isNotNull(user.phoneNumber)));
+      .where(
+        and(
+          eq(user.smsNotification, true),
+          eq(user.isInSchool, true),
+          isNotNull(user.phoneNumber)
+        )
+      );
 
     if (!data?.length) {
       return res.status(404).send({
