@@ -1,16 +1,17 @@
-import { eq } from "drizzle-orm";
-import { Request, Response } from "express";
+import { eq } from 'drizzle-orm';
+import { Request, Response } from 'express';
 
-import { db } from "../drizzle";
-import { earthquake } from "../drizzle/schema";
-import { verifyToken } from "../lib/auth";
-import { formatZodError } from "../lib/utils";
-import { createEarthquakeSchema } from "../lib/schema";
+import { db } from '../drizzle';
+import { earthquake } from '../drizzle/schema';
+import { verifyToken } from '../lib/auth';
+import { formatZodError } from '../lib/utils';
+import { createEarthquakeSchema } from '../lib/schema';
 import {
   getAllEarthquakes,
   getAllStartEndEarthquakes,
-} from "../lib/service/earthquake-service";
-import generateResponse from "../lib/service/gemini";
+} from '../lib/service/earthquake-service';
+import generateResponse from '../lib/service/gemini';
+import { getIO } from '../lib/socket';
 
 const systemInstruction = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Generate a concise professional summary that includes:
 - Historical earthquake activity assessment
@@ -25,13 +26,13 @@ export async function createEarthquake(req: Request, res: Response) {
   const { magnitude, duration } = req.body;
 
   const missingFields = [];
-  if (magnitude == null) missingFields.push("magnitude");
-  if (duration == null) missingFields.push("duration");
+  if (magnitude == null) missingFields.push('magnitude');
+  if (duration == null) missingFields.push('duration');
 
   if (missingFields.length > 0) {
     return res.status(400).send({
-      message: `Missing required fields: ${missingFields.join(", ")}`,
-      error: "Bad Request",
+      message: `Missing required fields: ${missingFields.join(', ')}`,
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -47,7 +48,7 @@ export async function createEarthquake(req: Request, res: Response) {
   if (isValidEarthquakeValues.error) {
     return res.status(400).send({
       message: formatZodError(isValidEarthquakeValues.error),
-      error: "Bad Request",
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -57,8 +58,8 @@ export async function createEarthquake(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -71,23 +72,26 @@ export async function createEarthquake(req: Request, res: Response) {
     if (!newEarthquake) {
       return res.status(500).send({
         message:
-          "The earthquake record could not be created in the database. Please try again.",
-        error: "Database Operation Failed",
+          'The earthquake record could not be created in the database. Please try again.',
+        error: 'Database Operation Failed',
         statusCode: 500,
       });
     }
 
+    const io = getIO();
+    io.emit('newEarthquake', newEarthquake);
+
     return res.status(201).send({
       message:
-        "Earthquake record successfully created and stored in the database",
+        'Earthquake record successfully created and stored in the database',
       statusCode: 201,
       data: newEarthquake,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while creating the earthquake record. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while creating the earthquake record. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }
@@ -101,8 +105,8 @@ export async function getEarthquakes(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -127,17 +131,17 @@ export async function getEarthquakes(req: Request, res: Response) {
         );
 
         const actualFormattedStart = actualStartDate.toLocaleDateString(
-          "en-US",
+          'en-US',
           {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
           }
         );
-        const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
+        const actualFormattedEnd = actualEndDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
         });
 
         prompt = `Analyze these earthquake records from ${actualFormattedStart} to ${actualFormattedEnd}:
@@ -152,17 +156,17 @@ ${JSON.stringify(earthquakes, null, 2)}`;
       } catch (error: any) {
         if (error.status === 429) {
           aiSummary =
-            "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+            'AI analysis is temporarily unavailable due to high demand. Please try again later.';
         } else {
-          aiSummary = "AI analysis is currently unavailable.";
+          aiSummary = 'AI analysis is currently unavailable.';
         }
       }
 
       return res.status(200).send({
-        message: "Earthquake record retrieved successfully",
+        message: 'Earthquake record retrieved successfully',
         statusCode: 200,
         data: earthquakes,
-        aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
+        aiSummary: typeof aiSummary === 'string' ? aiSummary : aiSummary.text,
       });
     }
 
@@ -178,15 +182,15 @@ ${JSON.stringify(earthquakes, null, 2)}`;
         Math.max(...dates.map((d) => d.getTime()))
       );
 
-      const actualFormattedStart = actualStartDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const actualFormattedStart = actualStartDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
-      const actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const actualFormattedEnd = actualEndDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
 
       prompt = `Analyze these historical earthquake records from ${actualFormattedStart} to ${actualFormattedEnd}:
@@ -201,23 +205,23 @@ ${JSON.stringify(earthquakes, null, 2)}`;
     } catch (error: any) {
       if (error.status === 429) {
         aiSummary =
-          "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+          'AI analysis is temporarily unavailable due to high demand. Please try again later.';
       } else {
-        aiSummary = "AI analysis is currently unavailable.";
+        aiSummary = 'AI analysis is currently unavailable.';
       }
     }
 
     return res.status(200).send({
-      message: "Earthquake record retrieved successfully",
+      message: 'Earthquake record retrieved successfully',
       statusCode: 200,
       data: earthquakes,
-      aiSummary: typeof aiSummary === "string" ? aiSummary : aiSummary.text,
+      aiSummary: typeof aiSummary === 'string' ? aiSummary : aiSummary.text,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while getting all the earthquake records. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while getting all the earthquake records. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }
@@ -228,8 +232,8 @@ export async function getEarthquake(req: Request, res: Response) {
 
   if (!earthquakeId) {
     return res.status(400).send({
-      message: "Earthquake ID is required",
-      error: "Bad Request",
+      message: 'Earthquake ID is required',
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -239,8 +243,8 @@ export async function getEarthquake(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -252,22 +256,22 @@ export async function getEarthquake(req: Request, res: Response) {
 
     if (!data) {
       return res.status(404).send({
-        message: "Earthquake record with the specified ID could not be found",
-        error: "Not Found",
+        message: 'Earthquake record with the specified ID could not be found',
+        error: 'Not Found',
         statusCode: 404,
       });
     }
 
     return res.status(200).send({
-      message: "Earthquake record retrieved successfully",
+      message: 'Earthquake record retrieved successfully',
       statusCode: 200,
       data,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while getting the earthquake record. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while getting the earthquake record. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }

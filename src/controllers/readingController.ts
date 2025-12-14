@@ -1,18 +1,19 @@
-import { eq } from "drizzle-orm";
-import { Request, Response } from "express";
+import { eq } from 'drizzle-orm';
+import { Request, Response } from 'express';
 
-import { db } from "../drizzle";
-import { reading } from "../drizzle/schema";
-import { verifyToken } from "../lib/auth";
-import { formatZodError } from "../lib/utils";
-import { createReadingSchema } from "../lib/schema";
-import generateResponse from "../lib/service/gemini";
+import { db } from '../drizzle';
+import { reading } from '../drizzle/schema';
+import { verifyToken } from '../lib/auth';
+import { formatZodError } from '../lib/utils';
+import { createReadingSchema } from '../lib/schema';
+import generateResponse from '../lib/service/gemini';
+import { getIO } from '../lib/socket';
 import {
   getAllReadings,
   getAllStartEndReadings,
   getBatteryLevel,
   getFirstDataDate,
-} from "../lib/service/reading-service";
+} from '../lib/service/reading-service';
 
 const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Generate a concise professional summary that includes:
 - Current seismic activity level assessment
@@ -27,16 +28,16 @@ export async function createReading(req: Request, res: Response) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
 
   const missingFields = [];
-  if (siAverage == null) missingFields.push("siAverage");
-  if (siMinimum == null) missingFields.push("siMinimum");
-  if (siMaximum == null) missingFields.push("siMaximum");
-  if (battery == null) missingFields.push("battery");
-  if (signalStrength == null) missingFields.push("signalStrength");
+  if (siAverage == null) missingFields.push('siAverage');
+  if (siMinimum == null) missingFields.push('siMinimum');
+  if (siMaximum == null) missingFields.push('siMaximum');
+  if (battery == null) missingFields.push('battery');
+  if (signalStrength == null) missingFields.push('signalStrength');
 
   if (missingFields.length > 0) {
     return res.status(400).send({
-      message: `Missing required fields: ${missingFields.join(", ")}`,
-      error: "Bad Request",
+      message: `Missing required fields: ${missingFields.join(', ')}`,
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -54,7 +55,7 @@ export async function createReading(req: Request, res: Response) {
   if (isValidReadingValues.error) {
     return res.status(400).send({
       message: formatZodError(isValidReadingValues.error),
-      error: "Bad Request",
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -64,8 +65,8 @@ export async function createReading(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -77,22 +78,25 @@ export async function createReading(req: Request, res: Response) {
 
     if (!newReading) {
       return res.status(500).send({
-        message: "Failed to create reading",
-        error: "Internal Server Error",
+        message: 'Failed to create reading',
+        error: 'Internal Server Error',
         statusCode: 500,
       });
     }
 
+    const io = getIO();
+    io.emit('newReading', newReading);
+
     return res.status(201).send({
-      message: "Reading created successfully",
+      message: 'Reading created successfully',
       statusCode: 201,
       data: newReading,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while creating the reading. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while creating the reading. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }
@@ -106,8 +110,8 @@ export async function getReadings(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -129,15 +133,15 @@ export async function getReadings(req: Request, res: Response) {
           }))
         : [];
 
-      let actualFormattedStart = start.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      let actualFormattedStart = start.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
-      let actualFormattedEnd = end.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      let actualFormattedEnd = end.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       });
 
       let prompt;
@@ -150,25 +154,25 @@ export async function getReadings(req: Request, res: Response) {
           Math.max(...dates.map((d) => d.getTime()))
         );
 
-        actualFormattedStart = actualStartDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          timeZone: "Asia/Manila",
+        actualFormattedStart = actualStartDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'Asia/Manila',
         });
-        actualFormattedEnd = actualEndDate.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          timeZone: "Asia/Manila",
+        actualFormattedEnd = actualEndDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'Asia/Manila',
         });
 
         prompt = `Analyze these seismic readings from ${actualFormattedStart} to ${actualFormattedEnd}:
 ${JSON.stringify(readings, null, 2)}
-Battery level: ${batteryLevel?.battery || "Unknown"}%`;
+Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
       } else {
         prompt = `No seismic readings found for the requested period.
-Battery level: ${batteryLevel?.battery || "Unknown"}%`;
+Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
       }
 
       let aiSummary;
@@ -178,20 +182,20 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         } catch (error: any) {
           if (error.status === 429) {
             aiSummary =
-              "AI analysis is temporarily unavailable due to high demand. Please try again later.";
+              'AI analysis is temporarily unavailable due to high demand. Please try again later.';
           } else {
-            aiSummary = "AI analysis is currently unavailable.";
+            aiSummary = 'AI analysis is currently unavailable.';
           }
         }
       } else {
         aiSummary =
-          "No AI summary available because there are no seismic readings for the selected period.";
+          'No AI summary available because there are no seismic readings for the selected period.';
       }
 
-      let peakMagnitude = { value: 0, time: "-" };
-      let avgMagnitude = "-";
+      let peakMagnitude = { value: 0, time: '-' };
+      let avgMagnitude = '-';
       let significantReadings = 0;
-      let peakActivity: { value: string; siAverage?: number } = { value: "-" };
+      let peakActivity: { value: string; siAverage?: number } = { value: '-' };
       if (readings && readings.length > 0) {
         const peak = readings.reduce(
           (max, r) => (r.siMaximum > max.siMaximum ? r : max),
@@ -199,12 +203,12 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         );
         peakMagnitude = {
           value: peak.siMaximum,
-          time: new Date(peak.createdAt).toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+          time: new Date(peak.createdAt).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
           }),
         };
         const avg =
@@ -216,19 +220,19 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
           readings[0]
         );
         peakActivity = {
-          value: new Date(peakAct.createdAt).toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
+          value: new Date(peakAct.createdAt).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
           }),
           siAverage: peakAct.siAverage,
         };
       }
 
       const { generateSeismicReportBuffer } = await import(
-        "../lib/pdf-generator"
+        '../lib/pdf-generator'
       );
       const pdfBuffer = await generateSeismicReportBuffer({
         readings,
@@ -239,18 +243,18 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
         peakActivity,
         batteryLevel: batteryLevel?.battery || 0,
         aiSummary:
-          typeof aiSummary === "string" ? aiSummary : aiSummary?.text || "",
+          typeof aiSummary === 'string' ? aiSummary : aiSummary?.text || '',
       });
-      const pdfBase64 = pdfBuffer.toString("base64");
+      const pdfBase64 = pdfBuffer.toString('base64');
 
       return res.status(200).send({
-        message: "Readings retrieved successfully",
+        message: 'Readings retrieved successfully',
         statusCode: 200,
         data: readings,
         firstDate: firstDate?.firstDate,
         batteryLevel: batteryLevel?.battery,
         aiSummary:
-          typeof aiSummary === "string" ? aiSummary : aiSummary?.text || "",
+          typeof aiSummary === 'string' ? aiSummary : aiSummary?.text || '',
         pdfBase64,
       });
     }
@@ -258,15 +262,15 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
     const readings = await getAllReadings();
 
     return res.status(200).send({
-      message: "Readings retrieved successfully",
+      message: 'Readings retrieved successfully',
       statusCode: 200,
       data: readings,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while getting all the readings. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while getting all the readings. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }
@@ -277,8 +281,8 @@ export async function getReading(req: Request, res: Response) {
 
   if (!readingId) {
     return res.status(400).send({
-      message: "Reading ID is required",
-      error: "Bad Request",
+      message: 'Reading ID is required',
+      error: 'Bad Request',
       statusCode: 400,
     });
   }
@@ -288,8 +292,8 @@ export async function getReading(req: Request, res: Response) {
 
     if (!isValidToken?.isValidToken) {
       return res.status(401).send({
-        message: "Invalid or expired authentication token",
-        error: "Unauthorized",
+        message: 'Invalid or expired authentication token',
+        error: 'Unauthorized',
         statusCode: 401,
       });
     }
@@ -301,22 +305,22 @@ export async function getReading(req: Request, res: Response) {
 
     if (!data) {
       return res.status(404).send({
-        message: "Reading with the specified ID could not be found",
-        error: "Not Found",
+        message: 'Reading with the specified ID could not be found',
+        error: 'Not Found',
         statusCode: 404,
       });
     }
 
     return res.status(200).send({
-      message: "Reading retrieved successfully",
+      message: 'Reading retrieved successfully',
       statusCode: 200,
       data,
     });
   } catch (error) {
     return res.status(500).send({
       message:
-        "An unexpected error occurred while getting the reading. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+        'An unexpected error occurred while getting the reading. Please try again later. If the problem persists, contact support.',
+      error: 'Internal Server Error',
       statusCode: 500,
     });
   }
