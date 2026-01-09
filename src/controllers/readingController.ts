@@ -2,12 +2,12 @@ import { eq } from 'drizzle-orm';
 import { Request, Response } from 'express';
 
 import { db } from '../drizzle';
-import { reading } from '../drizzle/schema';
+import { getIO } from '../lib/socket';
 import { verifyToken } from '../lib/auth';
-import { formatZodError } from '../lib/utils';
+import { reading } from '../drizzle/schema';
 import { createReadingSchema } from '../lib/schema';
 import generateResponse from '../lib/service/gemini';
-import { getIO } from '../lib/socket';
+import { formatZodError, getSeismicRiskLevelForReading, isReadingSeismicSafe } from '../lib/utils';
 import {
   getAllReadings,
   getAllStartEndReadings,
@@ -130,6 +130,8 @@ export async function getReadings(req: Request, res: Response) {
         ? readingsRaw.map((r) => ({
             ...r,
             createdAt: r.createdAt.toISOString(),
+            riskLevel: getSeismicRiskLevelForReading(r),
+            isSafe: isReadingSeismicSafe(r),
           }))
         : [];
 
@@ -261,10 +263,18 @@ Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
 
     const readings = await getAllReadings();
 
+    const readingsWithRisk = Array.isArray(readings)
+      ? readings.map((r) => ({
+          ...r,
+          riskLevel: getSeismicRiskLevelForReading(r),
+          isSafe: isReadingSeismicSafe(r),
+        }))
+      : [];
+
     return res.status(200).send({
       message: 'Readings retrieved successfully',
       statusCode: 200,
-      data: readings,
+      data: readingsWithRisk,
     });
   } catch (error) {
     return res.status(500).send({
