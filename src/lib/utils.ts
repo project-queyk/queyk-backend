@@ -29,3 +29,10 @@ export function getSeismicRiskLevelForReading(reading: Reading): SeismicRiskLeve
 export function isReadingSeismicSafe(reading: Reading): boolean {
   return isSeismicSafe(reading.siMaximum);
 }
+
+export function getEarthquakeRiskLevel(magnitude: number): EarthquakeRiskLevel {
+  if (magnitude < 4) return 'minor';
+  if (magnitude < 6) return 'moderate';
+  if (magnitude < 8) return 'major';
+  return 'severe';
+}

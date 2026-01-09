@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { db } from '../drizzle';
 import { earthquake } from '../drizzle/schema';
 import { verifyToken } from '../lib/auth';
-import { formatZodError } from '../lib/utils';
+import { formatZodError, getEarthquakeRiskLevel } from '../lib/utils';
 import { createEarthquakeSchema } from '../lib/schema';
 import {
   getAllEarthquakes,
@@ -118,7 +118,14 @@ export async function getEarthquakes(req: Request, res: Response) {
       start.setHours(-8, 0, 0, 0);
       end.setHours(15, 59, 59, 999);
 
-      const earthquakes = await getAllStartEndEarthquakes(start, end);
+      const earthquakesRaw = await getAllStartEndEarthquakes(start, end);
+
+      const earthquakes = Array.isArray(earthquakesRaw)
+        ? earthquakesRaw.map((e) => ({
+            ...e,
+            riskLevel: getEarthquakeRiskLevel(e.magnitude),
+          }))
+        : [];
 
       let prompt;
       if (earthquakes && earthquakes.length > 0) {
@@ -170,7 +177,14 @@ ${JSON.stringify(earthquakes, null, 2)}`;
       });
     }
 
-    const earthquakes = await getAllEarthquakes();
+    const earthquakesRaw = await getAllEarthquakes();
+
+    const earthquakes = Array.isArray(earthquakesRaw)
+      ? earthquakesRaw.map((e) => ({
+          ...e,
+          riskLevel: getEarthquakeRiskLevel(e.magnitude),
+        }))
+      : [];
 
     let prompt;
     if (earthquakes && earthquakes.length > 0) {
@@ -265,7 +279,10 @@ export async function getEarthquake(req: Request, res: Response) {
     return res.status(200).send({
       message: 'Earthquake record retrieved successfully',
       statusCode: 200,
-      data,
+      data: {
+        ...data,
+        riskLevel: getEarthquakeRiskLevel(data.magnitude),
+      },
     });
   } catch (error) {
     return res.status(500).send({
