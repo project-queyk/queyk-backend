@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getSeismicRiskLevel } from "./utils";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -189,13 +190,25 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
           reading.siAverage.toFixed(3),
           reading.siMaximum.toFixed(3),
           reading.siMinimum.toFixed(3),
+          getSeismicRiskLevel(reading.siMaximum).charAt(0).toUpperCase() +
+            getSeismicRiskLevel(reading.siMaximum).slice(1),
           `${reading.battery}%`,
           reading.signalStrength,
         ]);
 
       autoTable(doc, {
         startY: finalY + 5,
-        head: [["Time", "SI Avg", "SI Max", "SI Min", "Battery", "Signal"]],
+        head: [
+          [
+            "Time",
+            "SI Avg",
+            "SI Max",
+            "SI Min",
+            "Risk Level",
+            "Battery",
+            "Signal",
+          ],
+        ],
         body: tableData,
         theme: "striped",
         styles: {
@@ -214,8 +227,9 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
           1: { halign: "center", cellWidth: 20 },
           2: { halign: "center", cellWidth: 20 },
           3: { halign: "center", cellWidth: 20 },
-          4: { halign: "center", cellWidth: 18 },
+          4: { halign: "center", cellWidth: 20 },
           5: { halign: "center", cellWidth: 18 },
+          6: { halign: "center", cellWidth: 18 },
         },
         margin: { left: 20, right: 20 },
         tableLineColor: [240, 240, 240],

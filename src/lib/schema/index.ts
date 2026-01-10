@@ -86,4 +86,4 @@ export const createEarthquakeSchema = earthquakeSchema.omit({
   createdAt: true,
 });
 
-export type EarthquakeRiskLevel = 'minor' | 'moderate' | 'major' | 'severe';
+export type EarthquakeRiskLevel = "minor" | "moderate" | "major" | "severe";
