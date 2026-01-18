@@ -84,8 +84,14 @@ export async function createReading(req: Request, res: Response) {
       });
     }
 
-    const io = getIO();
-    io.emit('newReading', newReading);
+    try {
+      const io = getIO();
+      if (io) {
+        io.emit('newReading', newReading);
+      }
+    } catch (socketError) {
+      console.error('Socket.io emit error:', socketError);
+    }
 
     return res.status(201).send({
       message: 'Reading created successfully',
@@ -93,6 +99,7 @@ export async function createReading(req: Request, res: Response) {
       data: newReading,
     });
   } catch (error) {
+    console.error('CreateReading error:', error);
     return res.status(500).send({
       message:
         'An unexpected error occurred while creating the reading. Please try again later. If the problem persists, contact support.',
