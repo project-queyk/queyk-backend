@@ -90,7 +90,6 @@ export async function createReading(req: Request, res: Response) {
         io.emit('newReading', newReading);
       }
     } catch (socketError) {
-      console.error('Socket.io emit error:', socketError);
     }
 
     return res.status(201).send({
@@ -99,7 +98,6 @@ export async function createReading(req: Request, res: Response) {
       data: newReading,
     });
   } catch (error) {
-    console.error('CreateReading error:', error);
     return res.status(500).send({
       message:
         'An unexpected error occurred while creating the reading. Please try again later. If the problem persists, contact support.',
