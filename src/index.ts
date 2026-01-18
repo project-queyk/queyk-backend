@@ -9,10 +9,8 @@ initializeSocket(server);
 
 let monitoringInterval: NodeJS.Timeout | null = null;
 try {
-  if (process.env.NODE_ENV !== 'production') {
-    const { startDeviceMonitoring } = require('./lib/service/device-monitor-service');
-    monitoringInterval = startDeviceMonitoring();
-  }
+  const { startDeviceMonitoring } = require('./lib/service/device-monitor-service');
+  monitoringInterval = startDeviceMonitoring();
 } catch {
 }
 
