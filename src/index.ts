@@ -1,7 +1,6 @@
 import app from './app';
 import { createServer } from 'http';
 import { initializeSocket } from './lib/socket';
-import { startDeviceMonitoring } from './lib/service/device-monitor-service';
 
 const port = process.env.PORT || 8080;
 
@@ -9,8 +8,12 @@ const server = createServer(app);
 initializeSocket(server);
 
 let monitoringInterval: NodeJS.Timeout | null = null;
-if (process.env.NODE_ENV !== 'production') {
-  monitoringInterval = startDeviceMonitoring();
+try {
+  if (process.env.NODE_ENV !== 'production') {
+    const { startDeviceMonitoring } = require('./lib/service/device-monitor-service');
+    monitoringInterval = startDeviceMonitoring();
+  }
+} catch {
 }
 
 if (process.env.NODE_ENV !== 'production') {
@@ -28,3 +31,4 @@ process.on('SIGTERM', () => {
 });
 
 export default server;
+
