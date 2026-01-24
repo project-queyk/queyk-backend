@@ -606,7 +606,7 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
     }
 
     const data = await db
-      .select({ phoneNumber: user.phoneNumber })
+      .selectDistinct({ phoneNumber: user.phoneNumber })
       .from(user)
       .where(
         and(
