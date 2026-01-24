@@ -1,4 +1,4 @@
-import { and, gte, lte, desc } from "drizzle-orm";
+import { and, gte, lte, desc, asc } from "drizzle-orm";
 
 import { db } from "../../drizzle";
 import { Reading } from "../schema";
@@ -28,7 +28,7 @@ export async function getAllStartEndReadings(startDate: Date, endDate: Date) {
 export async function getFirstDataDate() {
   const [readings] = await db
     .select({ firstDate: reading.createdAt })
-    .from(reading)
+    .from(reading).orderBy(asc(reading.createdAt))
     .limit(1);
 
   if (!readings) return null;
