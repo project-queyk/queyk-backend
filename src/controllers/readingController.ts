@@ -6,7 +6,7 @@ import { getIO } from '../lib/socket';
 import { verifyToken } from '../lib/auth';
 import { reading } from '../drizzle/schema';
 import { createReadingSchema } from '../lib/schema';
-import generateResponse from '../lib/service/gemini';
+import generateResponse from '../lib/service/claude';
 import { formatZodError, getSeismicRiskLevelForReading, isReadingSeismicSafe } from '../lib/utils';
 import {
   getAllReadings,
@@ -57,14 +57,7 @@ function downsampleReadings<T extends { createdAt: string; siAverage: number; si
     });
 }
 
-const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Generate a concise professional summary that includes:
-- Current seismic activity level assessment
-- Risk evaluation based on SI values (normal: <0.5, elevated: 0.5-1.0, concerning: >1.0)
-- Notable patterns or anomalies in the data
-- Brief safety recommendations if applicable
-Keep response under 150 words and maintain a calm, informative tone.
-IMPORTANT: Convert all UTC times to Philippine Time (UTC+8) when displaying dates and times in your response. Display times in 12-hour format (e.g., "04:00 AM" or "04:00 PM") without mentioning "Philippine Time" or timezone. Be careful with AM/PM conversion - double-check that morning hours show AM and afternoon/evening hours show PM.
-Write naturally as if you are directly reporting on seismic monitoring without referencing datasets or data sources. Present findings as direct observations from monitoring equipment.`;
+const systemInstruction = `You are a seismic monitoring assistant. Provide a brief, plain text summary of the seismic readings without using markdown formatting. Keep it under 150 words and write naturally as direct observations. Convert UTC times to Philippine Time (UTC+8) in 12-hour format without mentioning the timezone. Focus on the overall activity level, any notable patterns, and safety status. Do not use headers, bullet points, or special formatting.`;
 
 export async function createReading(req: Request, res: Response) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
@@ -221,8 +214,23 @@ export async function getReadings(req: Request, res: Response) {
           timeZone: 'Asia/Manila',
         });
 
-        prompt = `Analyze these seismic readings from ${actualFormattedStart} to ${actualFormattedEnd}:
-${JSON.stringify(readings, null, 2)}
+        // Sample readings to reduce token usage
+        const sampleSize = Math.min(20, Math.ceil(readings.length / 10));
+        const step = Math.ceil(readings.length / sampleSize);
+        const sampledReadings = readings.filter((_, i) => i % step === 0);
+
+        const stats = {
+          totalReadings: readings.length,
+          avgSI: (readings.reduce((sum, r) => sum + r.siAverage, 0) / readings.length).toFixed(3),
+          maxSI: Math.max(...readings.map(r => r.siMaximum)).toFixed(3),
+          minSI: Math.min(...readings.map(r => r.siMinimum)).toFixed(3),
+          sampleCount: sampledReadings.length,
+        };
+
+        prompt = `Analyze seismic readings from ${actualFormattedStart} to ${actualFormattedEnd}:
+Stats - Total readings: ${stats.totalReadings}, Avg SI: ${stats.avgSI}, Max SI: ${stats.maxSI}, Min SI: ${stats.minSI}
+Sample readings (${stats.sampleCount} of ${stats.totalReadings}):
+${JSON.stringify(sampledReadings)}
 Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
       } else {
         prompt = `No seismic readings found for the requested period.
@@ -296,8 +304,7 @@ Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
         significantReadings,
         peakActivity,
         batteryLevel: batteryLevel?.battery || 0,
-        aiSummary:
-          typeof aiSummary === 'string' ? aiSummary : aiSummary?.text || '',
+        aiSummary,
       });
       const pdfBase64 = pdfBuffer.toString('base64');
 
@@ -307,8 +314,7 @@ Battery level: ${batteryLevel?.battery || 'Unknown'}%`;
         data: readings,
         firstDate: firstDate?.firstDate,
         batteryLevel: batteryLevel?.battery,
-        aiSummary:
-          typeof aiSummary === 'string' ? aiSummary : aiSummary?.text || '',
+        aiSummary,
         pdfBase64,
       });
     }
