@@ -15,6 +15,48 @@ import {
   getFirstDataDate,
 } from '../lib/service/reading-service';
 
+function getBucketMs(rangeDays: number): number {
+  if (rangeDays <= 1) return 30 * 60 * 1000;       // 30 min
+  if (rangeDays <= 3) return 60 * 60 * 1000;        // 1 hour
+  if (rangeDays <= 7) return 2 * 60 * 60 * 1000;    // 2 hours
+  if (rangeDays <= 30) return 6 * 60 * 60 * 1000;   // 6 hours
+  return 24 * 60 * 60 * 1000;                        // 24 hours
+}
+
+function downsampleReadings<T extends { createdAt: string; siAverage: number; siMinimum: number; siMaximum: number; battery: number; signalStrength: string }>(
+  readings: T[],
+  start: Date,
+  end: Date,
+): T[] {
+  if (readings.length === 0) return readings;
+
+  const rangeDays = (end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000);
+  const bucketMs = getBucketMs(rangeDays);
+
+  const buckets = new Map<number, T[]>();
+  for (const r of readings) {
+    const t = new Date(r.createdAt).getTime();
+    const bucketKey = Math.floor(t / bucketMs) * bucketMs;
+    if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
+    buckets.get(bucketKey)!.push(r);
+  }
+
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([bucketKey, group]) => {
+      const base = group[group.length - 1];
+      return {
+        ...base,
+        createdAt: new Date(bucketKey).toISOString(),
+        siAverage: group.reduce((s, r) => s + r.siAverage, 0) / group.length,
+        siMinimum: Math.min(...group.map((r) => r.siMinimum)),
+        siMaximum: Math.max(...group.map((r) => r.siMaximum)),
+        battery: group.reduce((s, r) => s + r.battery, 0) / group.length,
+        signalStrength: base.signalStrength,
+      };
+    });
+}
+
 const systemInstruction = `You are a seismic monitoring AI assistant for earthquake detection and analysis. Generate a concise professional summary that includes:
 - Current seismic activity level assessment
 - Risk evaluation based on SI values (normal: <0.5, elevated: 0.5-1.0, concerning: >1.0)
@@ -108,7 +150,7 @@ export async function createReading(req: Request, res: Response) {
 }
 
 export async function getReadings(req: Request, res: Response) {
-  const { startDate, endDate } = req.query;
+  const { startDate, endDate, platform } = req.query;
 
   try {
     const isValidToken = await verifyToken(req);
@@ -131,7 +173,7 @@ export async function getReadings(req: Request, res: Response) {
       const firstDate = await getFirstDataDate();
       const batteryLevel = await getBatteryLevel();
       const readingsRaw = await getAllStartEndReadings(start, end);
-      const readings = Array.isArray(readingsRaw)
+      const readingsMapped = Array.isArray(readingsRaw)
         ? readingsRaw.map((r) => ({
             ...r,
             createdAt: r.createdAt.toISOString(),
@@ -139,6 +181,11 @@ export async function getReadings(req: Request, res: Response) {
             isSafe: isReadingSeismicSafe(r),
           }))
         : [];
+
+      const readings =
+        platform === 'web'
+          ? readingsMapped
+          : downsampleReadings(readingsMapped, start, end);
 
       let actualFormattedStart = start.toLocaleDateString('en-US', {
         year: 'numeric',
