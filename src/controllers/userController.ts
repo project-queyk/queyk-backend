@@ -611,7 +611,6 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
       .where(
         and(
           eq(user.smsNotification, true),
-          eq(user.isInSchool, true),
           isNotNull(user.phoneNumber)
         )
       );
