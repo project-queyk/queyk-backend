@@ -57,7 +57,7 @@ function downsampleReadings<T extends { createdAt: string; siAverage: number; si
     });
 }
 
-const systemInstruction = `You are a seismic monitoring assistant. Provide a brief, plain text summary of the seismic readings without using markdown formatting. Keep it under 150 words and write naturally as direct observations. Convert UTC times to Philippine Time (UTC+8) in 12-hour format without mentioning the timezone. Focus on the overall activity level, any notable patterns, and safety status. Do not use headers, bullet points, or special formatting.`;
+const systemInstruction = `Talk like a regular person. "All clear" or "Activity detected" or "Warning", then what's happening, ground movement, and what to expect tomorrow. One sentence, natural tone, no markdown.`;
 
 export async function createReading(req: Request, res: Response) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
