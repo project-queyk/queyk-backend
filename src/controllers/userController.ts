@@ -10,7 +10,6 @@ import { signUserJWT } from "../lib/auth/jwt";
 import { mobilePhoneNumberSchema } from "../types/users";
 import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 import { schoolEmailSchema, tokenTypeUnionSchema } from "../lib/schema";
-import { mobilePhoneNumberSchema } from "../types/users";
 
 config({ path: ".env.local" });
 
@@ -184,7 +183,7 @@ export async function getAllUsers(req: Request, res: Response) {
 export async function getUserByUserId(req: Request, res: Response) {
   const { userId } = req.params;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -232,7 +231,7 @@ export async function toggleAlertNotification(req: Request, res: Response) {
   const { userId } = req.params;
   const { alertNotification } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -308,7 +307,7 @@ export async function toggleAlertPushNotification(req: Request, res: Response) {
   const { userId } = req.params;
   const { pushNotification } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -384,7 +383,7 @@ export async function toggleAlertPushNotification(req: Request, res: Response) {
 export async function deleteUserByUserId(req: Request, res: Response) {
   const { userId } = req.params;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -450,7 +449,7 @@ export async function switchUserRole(req: Request, res: Response) {
   const { userId } = req.params;
   const { role } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -527,7 +526,7 @@ export async function updateExpoPushToken(req: Request, res: Response) {
   const { userId } = req.params;
   const { expoPushToken } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -613,12 +612,7 @@ export async function getAllUserPhoneNumbers(req: Request, res: Response) {
     const data = await db
       .selectDistinct({ phoneNumber: user.phoneNumber })
       .from(user)
-      .where(
-        and(
-          eq(user.smsNotification, true),
-          isNotNull(user.phoneNumber)
-        )
-      );
+      .where(and(eq(user.smsNotification, true), isNotNull(user.phoneNumber)));
 
     if (!data?.length) {
       return res.status(404).send({
@@ -649,7 +643,7 @@ export async function updateUserSMSPhoneNumber(req: Request, res: Response) {
   const { userId } = req.params;
   const { phoneNumber } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -733,7 +727,7 @@ export async function updateUserSMSPhoneNumber(req: Request, res: Response) {
 export async function deleteUserSMSPhoneNumber(req: Request, res: Response) {
   const { userId } = req.params;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -803,7 +797,7 @@ export async function toggleAlertSMSNotification(req: Request, res: Response) {
   const { userId } = req.params;
   const { smsNotification } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
@@ -880,7 +874,7 @@ export async function updateIsInSchool(req: Request, res: Response) {
   const { userId } = req.params;
   const { isInSchool } = req.body;
 
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return res.status(400).send({
       message: "User ID is required",
       error: "Bad Request",
