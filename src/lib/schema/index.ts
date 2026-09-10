@@ -25,15 +25,16 @@ export const tokenTypeUnionSchema = z.union(tokenTypeUnion);
 export type TokenType = z.infer<typeof tokenTypeUnionSchema>;
 
 export const userSchema = z.object({
-  id: z.uuid(),
+  id: z.string(),
   name: z.string(),
-  email: z.email(),
-  profileImage: z.string(),
-  alertNotification: z.boolean(),
+  email: z.string(),
+  image: z.string().nullish(),
+  profileImage: z.string().nullish(),
+  alertNotification: z.boolean().nullish(),
   createdAt: z.date(),
-  role: z.union(roleUnion),
-  oauthId: z.string(),
-  isInSchool: z.boolean(),
+  role: z.string().default("user"),
+  oauthId: z.string().nullish(),
+  isInSchool: z.boolean().nullish(),
 });
 
 export const createUserSchema = userSchema.omit({
