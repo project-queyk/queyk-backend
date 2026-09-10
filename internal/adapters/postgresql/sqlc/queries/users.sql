@@ -19,6 +19,20 @@ SELECT DISTINCT phone_number::text AS phone_number
 FROM public."user"
 WHERE sms_notification = true AND phone_number IS NOT NULL;
 
+-- name: ListActivePushTokens :many
+SELECT expo_push_token::text AS token, name
+FROM public."user"
+WHERE push_notification = true AND expo_push_token IS NOT NULL;
+
+-- name: ListAdminActivePushTokens :many
+SELECT expo_push_token::text AS token, name
+FROM public."user"
+WHERE push_notification = true AND role = 'admin' AND expo_push_token IS NOT NULL;
+
+-- name: ListAlertNotificationEmails :many
+SELECT email, name FROM public."user"
+WHERE alert_notification = true;
+
 -- name: UpdateUserRole :one
 UPDATE public."user"
 SET role = $2
@@ -40,6 +54,18 @@ RETURNING *;
 -- name: RemoveUserPhoneNumber :one
 UPDATE public."user"
 SET phone_number = NULL, sms_notification = false
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateUserWebPushSubscription :one
+UPDATE public."user"
+SET web_push_subscription = $2
+WHERE id = $1
+RETURNING *;
+
+-- name: RemoveUserWebPushSubscription :one
+UPDATE public."user"
+SET web_push_subscription = NULL
 WHERE id = $1
 RETURNING *;
 

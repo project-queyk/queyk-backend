@@ -11,103 +11,174 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getAllReadings = `-- name: GetAllReadings :many
-SELECT id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at FROM public."reading"
+const createReading = `-- name: CreateReading :one
+INSERT INTO public."reading" (
+    si_average, si_minimum, si_maximum, battery, signal_strength
+) VALUES (
+    $1, $2, $3, $4, $5
+)
+RETURNING id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at
 `
 
-func (q *Queries) GetAllReadings(ctx context.Context) ([]Reading, error) {
-	rows, err := q.db.Query(ctx, getAllReadings)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Reading
-	for rows.Next() {
-		var i Reading
-		if err := rows.Scan(
-			&i.ID,
-			&i.SiAverage,
-			&i.SiMinimum,
-			&i.SiMaximum,
-			&i.Battery,
-			&i.SignalStrength,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type CreateReadingParams struct {
+	SiAverage      float64 `json:"si_average"`
+	SiMinimum      float64 `json:"si_minimum"`
+	SiMaximum      float64 `json:"si_maximum"`
+	Battery        float64 `json:"battery"`
+	SignalStrength string  `json:"signal_strength"`
 }
 
-const getAllStartEndReadings = `-- name: GetAllStartEndReadings :many
-SELECT id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at FROM public."reading"
-WHERE created_at >= $1 AND created_at <= $2
-`
-
-type GetAllStartEndReadingsParams struct {
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
-}
-
-func (q *Queries) GetAllStartEndReadings(ctx context.Context, arg GetAllStartEndReadingsParams) ([]Reading, error) {
-	rows, err := q.db.Query(ctx, getAllStartEndReadings, arg.CreatedAt, arg.CreatedAt_2)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Reading
-	for rows.Next() {
-		var i Reading
-		if err := rows.Scan(
-			&i.ID,
-			&i.SiAverage,
-			&i.SiMinimum,
-			&i.SiMaximum,
-			&i.Battery,
-			&i.SignalStrength,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getBatteryLevel = `-- name: GetBatteryLevel :one
-SELECT battery, created_at FROM public."reading"
-ORDER BY created_at DESC
-LIMIT 1
-`
-
-type GetBatteryLevelRow struct {
-	Battery   float64            `json:"battery"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-}
-
-func (q *Queries) GetBatteryLevel(ctx context.Context) (GetBatteryLevelRow, error) {
-	row := q.db.QueryRow(ctx, getBatteryLevel)
-	var i GetBatteryLevelRow
-	err := row.Scan(&i.Battery, &i.CreatedAt)
+func (q *Queries) CreateReading(ctx context.Context, arg CreateReadingParams) (Reading, error) {
+	row := q.db.QueryRow(ctx, createReading,
+		arg.SiAverage,
+		arg.SiMinimum,
+		arg.SiMaximum,
+		arg.Battery,
+		arg.SignalStrength,
+	)
+	var i Reading
+	err := row.Scan(
+		&i.ID,
+		&i.SiAverage,
+		&i.SiMinimum,
+		&i.SiMaximum,
+		&i.Battery,
+		&i.SignalStrength,
+		&i.CreatedAt,
+	)
 	return i, err
 }
 
-const getFirstDataDate = `-- name: GetFirstDataDate :one
+const getFirstReadingDate = `-- name: GetFirstReadingDate :one
 SELECT created_at AS first_date FROM public."reading"
 ORDER BY created_at ASC
 LIMIT 1
 `
 
-func (q *Queries) GetFirstDataDate(ctx context.Context) (pgtype.Timestamptz, error) {
-	row := q.db.QueryRow(ctx, getFirstDataDate)
+func (q *Queries) GetFirstReadingDate(ctx context.Context) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getFirstReadingDate)
 	var first_date pgtype.Timestamptz
 	err := row.Scan(&first_date)
 	return first_date, err
+}
+
+const getLastReadingDate = `-- name: GetLastReadingDate :one
+SELECT created_at AS last_date FROM public."reading"
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLastReadingDate(ctx context.Context) (pgtype.Timestamptz, error) {
+	row := q.db.QueryRow(ctx, getLastReadingDate)
+	var last_date pgtype.Timestamptz
+	err := row.Scan(&last_date)
+	return last_date, err
+}
+
+const getLatestBatteryLevel = `-- name: GetLatestBatteryLevel :one
+SELECT battery, created_at FROM public."reading"
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+type GetLatestBatteryLevelRow struct {
+	Battery   float64            `json:"battery"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetLatestBatteryLevel(ctx context.Context) (GetLatestBatteryLevelRow, error) {
+	row := q.db.QueryRow(ctx, getLatestBatteryLevel)
+	var i GetLatestBatteryLevelRow
+	err := row.Scan(&i.Battery, &i.CreatedAt)
+	return i, err
+}
+
+const getReading = `-- name: GetReading :one
+SELECT id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at FROM public."reading"
+WHERE id = $1
+`
+
+func (q *Queries) GetReading(ctx context.Context, id pgtype.UUID) (Reading, error) {
+	row := q.db.QueryRow(ctx, getReading, id)
+	var i Reading
+	err := row.Scan(
+		&i.ID,
+		&i.SiAverage,
+		&i.SiMinimum,
+		&i.SiMaximum,
+		&i.Battery,
+		&i.SignalStrength,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listReadings = `-- name: ListReadings :many
+SELECT id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at FROM public."reading"
+`
+
+func (q *Queries) ListReadings(ctx context.Context) ([]Reading, error) {
+	rows, err := q.db.Query(ctx, listReadings)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reading
+	for rows.Next() {
+		var i Reading
+		if err := rows.Scan(
+			&i.ID,
+			&i.SiAverage,
+			&i.SiMinimum,
+			&i.SiMaximum,
+			&i.Battery,
+			&i.SignalStrength,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReadingsByDateRange = `-- name: ListReadingsByDateRange :many
+SELECT id, si_average, si_minimum, si_maximum, battery, signal_strength, created_at FROM public."reading"
+WHERE created_at >= $1 AND created_at <= $2
+`
+
+type ListReadingsByDateRangeParams struct {
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
+}
+
+func (q *Queries) ListReadingsByDateRange(ctx context.Context, arg ListReadingsByDateRangeParams) ([]Reading, error) {
+	rows, err := q.db.Query(ctx, listReadingsByDateRange, arg.CreatedAt, arg.CreatedAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Reading
+	for rows.Next() {
+		var i Reading
+		if err := rows.Scan(
+			&i.ID,
+			&i.SiAverage,
+			&i.SiMinimum,
+			&i.SiMaximum,
+			&i.Battery,
+			&i.SignalStrength,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

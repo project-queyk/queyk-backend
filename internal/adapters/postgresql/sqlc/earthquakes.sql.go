@@ -11,12 +11,55 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getAllEarthquakes = `-- name: GetAllEarthquakes :many
+const createEarthquake = `-- name: CreateEarthquake :one
+INSERT INTO public."earthquake" (
+    magnitude, duration
+) VALUES (
+    $1, $2
+)
+RETURNING id, magnitude, duration, created_at
+`
+
+type CreateEarthquakeParams struct {
+	Magnitude float64 `json:"magnitude"`
+	Duration  int16   `json:"duration"`
+}
+
+func (q *Queries) CreateEarthquake(ctx context.Context, arg CreateEarthquakeParams) (Earthquake, error) {
+	row := q.db.QueryRow(ctx, createEarthquake, arg.Magnitude, arg.Duration)
+	var i Earthquake
+	err := row.Scan(
+		&i.ID,
+		&i.Magnitude,
+		&i.Duration,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getEarthquake = `-- name: GetEarthquake :one
+SELECT id, magnitude, duration, created_at FROM public."earthquake"
+WHERE id = $1
+`
+
+func (q *Queries) GetEarthquake(ctx context.Context, id pgtype.UUID) (Earthquake, error) {
+	row := q.db.QueryRow(ctx, getEarthquake, id)
+	var i Earthquake
+	err := row.Scan(
+		&i.ID,
+		&i.Magnitude,
+		&i.Duration,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listEarthquakes = `-- name: ListEarthquakes :many
 SELECT id, magnitude, duration, created_at FROM public."earthquake"
 `
 
-func (q *Queries) GetAllEarthquakes(ctx context.Context) ([]Earthquake, error) {
-	rows, err := q.db.Query(ctx, getAllEarthquakes)
+func (q *Queries) ListEarthquakes(ctx context.Context) ([]Earthquake, error) {
+	rows, err := q.db.Query(ctx, listEarthquakes)
 	if err != nil {
 		return nil, err
 	}
@@ -40,18 +83,18 @@ func (q *Queries) GetAllEarthquakes(ctx context.Context) ([]Earthquake, error) {
 	return items, nil
 }
 
-const getAllStartEndEarthquakes = `-- name: GetAllStartEndEarthquakes :many
+const listEarthquakesByDateRange = `-- name: ListEarthquakesByDateRange :many
 SELECT id, magnitude, duration, created_at FROM public."earthquake"
 WHERE created_at >= $1 AND created_at <= $2
 `
 
-type GetAllStartEndEarthquakesParams struct {
+type ListEarthquakesByDateRangeParams struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	CreatedAt_2 pgtype.Timestamptz `json:"created_at_2"`
 }
 
-func (q *Queries) GetAllStartEndEarthquakes(ctx context.Context, arg GetAllStartEndEarthquakesParams) ([]Earthquake, error) {
-	rows, err := q.db.Query(ctx, getAllStartEndEarthquakes, arg.CreatedAt, arg.CreatedAt_2)
+func (q *Queries) ListEarthquakesByDateRange(ctx context.Context, arg ListEarthquakesByDateRangeParams) ([]Earthquake, error) {
+	rows, err := q.db.Query(ctx, listEarthquakesByDateRange, arg.CreatedAt, arg.CreatedAt_2)
 	if err != nil {
 		return nil, err
 	}

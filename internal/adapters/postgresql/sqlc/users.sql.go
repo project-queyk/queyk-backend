@@ -141,6 +141,98 @@ func (q *Queries) GetUserByEmailAndOAuthID(ctx context.Context, arg GetUserByEma
 	return i, err
 }
 
+const listActivePushTokens = `-- name: ListActivePushTokens :many
+SELECT expo_push_token::text AS token, name
+FROM public."user"
+WHERE push_notification = true AND expo_push_token IS NOT NULL
+`
+
+type ListActivePushTokensRow struct {
+	Token string `json:"token"`
+	Name  string `json:"name"`
+}
+
+func (q *Queries) ListActivePushTokens(ctx context.Context) ([]ListActivePushTokensRow, error) {
+	rows, err := q.db.Query(ctx, listActivePushTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActivePushTokensRow
+	for rows.Next() {
+		var i ListActivePushTokensRow
+		if err := rows.Scan(&i.Token, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAdminActivePushTokens = `-- name: ListAdminActivePushTokens :many
+SELECT expo_push_token::text AS token, name
+FROM public."user"
+WHERE push_notification = true AND role = 'admin' AND expo_push_token IS NOT NULL
+`
+
+type ListAdminActivePushTokensRow struct {
+	Token string `json:"token"`
+	Name  string `json:"name"`
+}
+
+func (q *Queries) ListAdminActivePushTokens(ctx context.Context) ([]ListAdminActivePushTokensRow, error) {
+	rows, err := q.db.Query(ctx, listAdminActivePushTokens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAdminActivePushTokensRow
+	for rows.Next() {
+		var i ListAdminActivePushTokensRow
+		if err := rows.Scan(&i.Token, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAlertNotificationEmails = `-- name: ListAlertNotificationEmails :many
+SELECT email, name FROM public."user"
+WHERE alert_notification = true
+`
+
+type ListAlertNotificationEmailsRow struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
+func (q *Queries) ListAlertNotificationEmails(ctx context.Context) ([]ListAlertNotificationEmailsRow, error) {
+	rows, err := q.db.Query(ctx, listAlertNotificationEmails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAlertNotificationEmailsRow
+	for rows.Next() {
+		var i ListAlertNotificationEmailsRow
+		if err := rows.Scan(&i.Email, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSMSPhoneNumbers = `-- name: ListSMSPhoneNumbers :many
 SELECT DISTINCT phone_number::text AS phone_number
 FROM public."user"
@@ -176,6 +268,35 @@ RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_sc
 
 func (q *Queries) RemoveUserPhoneNumber(ctx context.Context, id pgtype.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, removeUserPhoneNumber, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const removeUserWebPushSubscription = `-- name: RemoveUserWebPushSubscription :one
+UPDATE public."user"
+SET web_push_subscription = NULL
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+func (q *Queries) RemoveUserWebPushSubscription(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, removeUserWebPushSubscription, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -414,6 +535,40 @@ type UpdateUserSMSNotificationParams struct {
 
 func (q *Queries) UpdateUserSMSNotification(ctx context.Context, arg UpdateUserSMSNotificationParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUserSMSNotification, arg.ID, arg.SmsNotification)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserWebPushSubscription = `-- name: UpdateUserWebPushSubscription :one
+UPDATE public."user"
+SET web_push_subscription = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserWebPushSubscriptionParams struct {
+	ID                  pgtype.UUID `json:"id"`
+	WebPushSubscription []byte      `json:"web_push_subscription"`
+}
+
+func (q *Queries) UpdateUserWebPushSubscription(ctx context.Context, arg UpdateUserWebPushSubscriptionParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserWebPushSubscription, arg.ID, arg.WebPushSubscription)
 	var i User
 	err := row.Scan(
 		&i.ID,
