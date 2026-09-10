@@ -5,9 +5,9 @@
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/src/index.js",
     "start:dist": "node dist/src/index.js",
-    "vercel-build": "echo 'No build step required'"
+    "vercel-build": "esbuild api/index.ts --bundle --platform=node --format=esm --packages=external --outfile=api/index.js"
   },
   "repository": {
     "type": "git",
