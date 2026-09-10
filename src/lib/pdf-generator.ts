@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { getSeismicRiskLevel } from "./utils";
 
@@ -58,95 +58,123 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       doc.addImage(queykLogo, "PNG", 10, 5, 25, 8);
 
       if (iccLogo) {
-        doc.addImage(iccLogo, "PNG", pageWidth - 18, 5, 8, 8);
+        doc.addImage(iccLogo, "PNG", pageWidth - 35, 5, 25, 8);
       }
 
-      doc.setFontSize(16);
+      doc.setTextColor(
+        colors.primaryForeground[0],
+        colors.primaryForeground[1],
+        colors.primaryForeground[2],
+      );
+      doc.setFontSize(22);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(colors.yellow[0], colors.yellow[1], colors.yellow[2]);
-      doc.text("Seismic Activity Report", pageWidth / 2, 15, {
-        align: "center",
-      });
+      doc.text("QUEYK", pageWidth / 2, 16, { align: "center" });
 
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(220, 220, 220);
-      doc.text("Immaculada Concepcion College", pageWidth / 2, 22, {
+      doc.text("Seismic Intensity Monitoring System", pageWidth / 2, 23, {
         align: "center",
       });
 
-      yPosition = 40;
+      doc.setDrawColor(colors.yellow[0], colors.yellow[1], colors.yellow[2]);
+      doc.setLineWidth(1);
+      doc.line(0, 30, pageWidth, 30);
 
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
+      yPosition = 45;
+
+      const [start, end] = data.dateRange.split(" - ");
+      const startPHT = start ? new Date(start) : null;
+      let reportPeriodText = data.dateRange;
+      if (startPHT && !isNaN(startPHT.getTime())) {
+        const endPHT = end ? new Date(end) : null;
+        if (
+          endPHT &&
+          !isNaN(endPHT.getTime()) &&
+          startPHT.toDateString() === endPHT.toDateString()
+        ) {
+          reportPeriodText = startPHT.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            timeZone: "Asia/Manila",
+          });
+        }
+      }
+
+      doc.setFontSize(10);
       doc.setTextColor(
         colors.mutedText[0],
         colors.mutedText[1],
-        colors.mutedText[2]
+        colors.mutedText[2],
       );
-      function formatToPHT(dateStr: string) {
-        const date = new Date(dateStr);
-        return isNaN(date.getTime())
-          ? dateStr
-          : date.toLocaleString("en-US", { timeZone: "Asia/Manila" });
-      }
-
-      const [start, end] = data.dateRange.split(" to ");
-      const startPHT = formatToPHT(start);
-      let reportPeriodText = startPHT;
-      if (end && end.trim() && end.trim().toLowerCase() !== "undefined") {
-        const endPHT = formatToPHT(end);
-        reportPeriodText += ` to ${endPHT}`;
-      }
       doc.text(`Report Period: ${reportPeriodText}`, 20, yPosition);
-      yPosition += 7;
       doc.text(
         `Generated: ${new Date().toLocaleString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
           timeZone: "Asia/Manila",
         })}`,
-        20,
-        yPosition
+        pageWidth - 20,
+        yPosition,
+        { align: "right" },
       );
+
       yPosition += 15;
 
-      doc.setFontSize(18);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text("Summary Statistics", 20, yPosition);
-      yPosition += 12;
+      doc.text("AI Seismic Analysis", 20, yPosition);
 
-      if (data.aiSummary && data.aiSummary.trim()) {
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      yPosition += 8;
 
-        const splitSummary = doc.splitTextToSize(data.aiSummary, 170);
-        doc.text(splitSummary, 20, yPosition);
+      const splitSummary = doc.splitTextToSize(data.aiSummary, pageWidth - 40);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
+      doc.text(splitSummary, 20, yPosition);
 
-        const summaryHeight = splitSummary.length * 5;
-        yPosition += summaryHeight + 8;
-      }
+      const summaryHeight = splitSummary.length * 5;
+      yPosition += summaryHeight + 10;
 
       const summaryData = [
+        ["Total Readings Analyzed", data.readings.length.toString()],
+        ["Mean Seismic Intensity", data.avgMagnitude],
         [
-          "Peak SI Maximum",
-          `${data.peakMagnitude.value.toFixed(3)} @ ${new Date(
-            data.peakMagnitude.time
-          ).toLocaleString("en-US", { timeZone: "Asia/Manila" })}`,
+          "Peak Ground Acceleration",
+          `${data.peakMagnitude.value.toFixed(3)} SI (${
+            data.peakMagnitude.time !== "-"
+              ? new Date(data.peakMagnitude.time).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "Asia/Manila",
+                })
+              : "-"
+          })`,
         ],
-        ["Average SI Reading", data.avgMagnitude],
         [
-          "Significant Activity Readings",
-          `${data.significantReadings} readings`,
+          "Readings Exceeding Threshold (>0.5 SI)",
+          data.significantReadings.toString(),
         ],
         [
-          "Peak Activity Time",
-          `${new Date(data.peakActivity.value).toLocaleString("en-US", {
-            timeZone: "Asia/Manila",
-          })}${
-            data.peakActivity.siAverage
-              ? ` (${data.peakActivity.siAverage.toFixed(3)} SI)`
-              : ""
+          "Period of Maximum Activity",
+          `${
+            data.peakActivity.value !== "-"
+              ? new Date(data.peakActivity.value).toLocaleString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "Asia/Manila",
+                })
+              : "-"
           }`,
         ],
       ];
@@ -249,7 +277,7 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
         doc.setTextColor(
           colors.mutedText[0],
           colors.mutedText[1],
-          colors.mutedText[2]
+          colors.mutedText[2],
         );
         doc.text(`Page ${i} of ${pageCount}`, pageWidth - 20, pageHeight - 12, {
           align: "right",
@@ -263,13 +291,9 @@ export function generateSeismicReportBuffer(data: ReportData): Promise<Buffer> {
       doc.setTextColor(
         colors.mutedText[0],
         colors.mutedText[1],
-        colors.mutedText[2]
+        colors.mutedText[2],
       );
-      doc.text(
-        "Generated by Queyk for Immaculada Concepcion College",
-        20,
-        pageHeight - 12
-      );
+      doc.text("Generated by Queyk for ICC", 20, pageHeight - 12);
 
       const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
       resolve(pdfBuffer);
