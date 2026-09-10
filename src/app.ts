@@ -28,7 +28,6 @@ const limiter = rateLimit({
 });
 
 app.use(helmet());
-// app.use(limiter);
 app.use(morgan("dev"));
 app.use(
   cors({
@@ -45,7 +44,6 @@ app.use(
   }),
 );
 
-// Mount Better Auth handler before body-parsing middleware
 app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 app.use(express.json());
@@ -69,7 +67,5 @@ app.use("/v1/api/notifications", notificationRouter);
 app.use("/v1/api/iot/earthquakes", earthquakeRouter);
 app.use("/v1/api/earthquakes", limiter, earthquakeRouter);
 app.use("/v1/api/iot/device", iotRouter);
-
-// app.use("/v1/api/tokens", tokenRouter);
 
 export default app;
