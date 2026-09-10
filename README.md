@@ -3,12 +3,13 @@
 [![Express.js](https://img.shields.io/badge/Express-5.1-black.svg?logo=express)](https://expressjs.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg?logo=node.js)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg?logo=typescript)](https://www.typescriptlang.org/)
-[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.44-C5F74F.svg?logo=drizzle)](https://orm.drizzle.team/)
+[![Better Auth](https://img.shields.io/badge/Better_Auth-1.7-black.svg?logo=auth0)](https://www.better-auth.com/)
+[![Drizzle ORM](https://img.shields.io/badge/Drizzle_ORM-0.45-C5F74F.svg?logo=drizzle)](https://orm.drizzle.team/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg?logo=postgresql)](https://www.postgresql.org/)
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-black.svg?logo=socket.io)](https://socket.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Queyk Backend is the central server application powering the Queyk disaster resilience ecosystem. Built with Express 5, TypeScript, Drizzle ORM, and PostgreSQL, it ingests live seismic telemetry from IoT hardware, streams real-time updates over WebSockets, generates contextual AI emergency alerts, and coordinates notification dispatches across Mobile and Web clients.
+Queyk Backend is the central server application powering the Queyk disaster resilience ecosystem. Built with Express 5, TypeScript, Better Auth, Drizzle ORM, and PostgreSQL, it ingests live seismic telemetry from IoT hardware, streams real-time updates over WebSockets, generates contextual AI emergency alerts, coordinates notification dispatches across Mobile and Web clients, and handles centralized authentication & session management.
 
 ---
 
@@ -24,9 +25,12 @@ The backend serves as the core broker between the Omron D7S seismic sensor units
 - **Multi-Channel Notification Dispatch**:
   - **Expo Push Notifications**: High-priority push alerts delivered directly to mobile clients running iOS and Android.
   - **Emergency Email Blasts**: Automated notification dispatch via Nodemailer and SMTP to campus leadership and emergency response personnel.
-- **Unified Identity & Access Management**:
-  - Google OAuth profile ingestion with institutional email domain enforcement (`SCHOOL_EMAIL_ADDRESS`).
-  - Cryptographically signed stateless JWT issuance (`JWT_SECRET`) for authenticated client sessions across Web, Mobile, and Desktop.
+- **Unified Identity & Access Management (Better Auth)**:
+  - Integrated with **Better Auth** using the Drizzle ORM adapter.
+  - Shared PostgreSQL session and user store with `queyk-web` (`user`, `session`, `account`, `verification` tables).
+  - Bearer token authentication plugin support for mobile and API clients.
+  - Automatic account linking for verified Google OAuth accounts.
+  - Institutional email domain filtering (`SCHOOL_EMAIL_ADDRESS`).
   - Role-based authorization (`admin` / `user`) protecting sensitive administrative endpoints.
 - **Device Health & Watchdog Monitoring**: Automated background interval service checking sensor connectivity, signal quality, and battery thresholds.
 
@@ -41,12 +45,17 @@ flowchart TD
         A -->|"POST /v1/api/iot/earthquakes"| C[Earthquake Controller]
     end
 
+    subgraph AuthLayer ["Authentication & Sessions (Better Auth)"]
+        BA["Better Auth Handler\\n/api/auth/{*any}"] --> D[(PostgreSQL via Drizzle ORM)]
+        MW["Auth Middleware & Bearer Plugin"] --> D
+    end
+
     subgraph CoreEngine ["Queyk API Engine & Services"]
-        B --> D[(PostgreSQL via Drizzle ORM)]
+        B --> D
         C --> D
         B --> E[Socket.io Broadcast]
         C --> F{Magnitude >= 2.0?}
-        F -- Yes --> G[AI Alert Generation Service\nGemini / Claude API]
+        F -- Yes --> G[AI Alert Generation Service\\nGemini / Claude API]
         G --> H[Notification Pipeline]
     end
 
@@ -68,23 +77,28 @@ flowchart TD
 
 - **Runtime & Language**: [Node.js](https://nodejs.org/) (v20+) & [TypeScript 5.9](https://www.typescriptlang.org/)
 - **Framework**: [Express 5.1](https://expressjs.com/) with [Helmet](https://helmetjs.github.io/) & [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit)
-- **Database & ORM**: [PostgreSQL](https://www.postgresql.org/) with [Drizzle ORM 0.44](https://orm.drizzle.team/) & [Drizzle Kit](https://orm.drizzle.team/kit-docs/overview)
+- **Authentication**: [Better Auth](https://www.better-auth.com/) with `@better-auth/drizzle-adapter` & Bearer token plugin
+- **Database & ORM**: [PostgreSQL](https://www.postgresql.org/) (Supabase with RLS enabled) with [Drizzle ORM 0.45](https://orm.drizzle.team/) & [Drizzle Kit](https://orm.drizzle.team/kit-docs/overview)
 - **Real-Time Communication**: [Socket.io 4.8](https://socket.io/)
 - **AI Integrations**: [@google/genai](https://www.npmjs.com/package/@google/genai) & [@anthropic-ai/sdk](https://www.npmjs.com/package/@anthropic-ai/sdk)
 - **Push & Messaging**:
   - [expo-server-sdk](https://github.com/expo/expo-server-sdk-node) (Expo Push Notifications)
   - [nodemailer](https://nodemailer.com/) (Emergency email dispatches)
 - **Validation**: [Zod v4](https://zod.dev/) & [validator.js](https://github.com/validatorjs/validator.js)
-- **Security & Tokens**: [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [nanoid](https://github.com/ai/nanoid)
+- **Security**: [better-auth](https://www.better-auth.com/), [nanoid](https://github.com/ai/nanoid), Row Level Security (RLS)
 
 ---
 
 ## 4. API Endpoints Reference
 
-### 🔐 Authentication & Users (`/v1/api/users`)
+### 🔐 Authentication (`/api/auth/*`)
 
-- `POST /v1/api/users` — User sign-in / registration (issues stateless JWT).
-- `GET /v1/api/users` — Paginated user directory (admin).
+- `ALL /api/auth/*` — Better Auth handler endpoints (session resolution, token verification, OAuth callbacks).
+
+### 👥 Users (`/v1/api/users`)
+
+- `POST /v1/api/users` — User sign-in / registration sync.
+- `GET /v1/api/users` — Paginated user directory (admin only).
 - `GET /v1/api/users/:userId` — Retrieve user profile.
 - `PATCH /v1/api/users/:userId/role` — Update user permissions (`user` / `admin`).
 - `PATCH /v1/api/users/:userId/notifications` — Toggle general alert notifications.
@@ -126,10 +140,10 @@ queyk-backend/
 │   │   ├── tokenController.ts
 │   │   └── userController.ts
 │   ├── drizzle/                # Database schema & migrations
-│   │   ├── schema.ts           # Drizzle table & enum definitions
-│   │   └── index.ts            # Database client connection
+│   │   ├── schema.ts           # Drizzle table & enum definitions (user, session, account, etc.)
+│   │   └── index.ts            # Database client connection (PostgreSQL)
 │   ├── lib/                    # Shared libraries & utilities
-│   │   ├── auth/               # Auth verification & JWT helpers
+│   │   ├── auth/               # Better Auth instance, middleware, and bearer plugin
 │   │   ├── schema/             # Zod validation schemas
 │   │   ├── service/            # External services (Gemini, Claude, Push, Email)
 │   │   ├── socket.ts           # Socket.io initialization & events
@@ -143,7 +157,7 @@ queyk-backend/
 │   │   ├── readings.ts
 │   │   ├── tokens.ts
 │   │   └── users.ts
-│   ├── app.ts                  # Express application setup & middleware
+│   ├── app.ts                  # Express application setup & Better Auth mounting
 │   └── index.ts                # HTTP & WebSocket server entrypoint
 ├── drizzle.config.ts           # Drizzle Kit migration configuration
 ├── .env.example                # Example environment configuration
@@ -184,19 +198,21 @@ queyk-backend/
 
 Configure the following variables in `.env.local`:
 
-| Variable               | Description                                  | Example / Required                  |
-| :--------------------- | :------------------------------------------- | :---------------------------------- |
-| `DATABASE_URL`         | PostgreSQL connection string                 | `postgres://user:pass@host:5432/db` |
-| `JWT_SECRET`           | Secret key for signing user session JWTs     | Random 32+ char string              |
-| `JWT_EXPIRES_IN`       | Duration before user JWT expires             | `7d`                                |
-| `GEMINI_API_KEY`       | Google Gemini API key for emergency copy     | `AIzaSy...`                         |
-| `ANTHROPIC_API_KEY`    | Anthropic Claude API key (optional/fallback) | `sk-ant-...`                        |
-| `EXPO_ACCESS_TOKEN`    | Expo access token for mobile push service    | `your-expo-token`                   |
-| `APP_GMAIL_EMAIL`      | Sender email address for emergency blasts    | `alerts@school.edu`                 |
-| `APP_GMAIL_PASSWORD`   | App-specific password for email sender       | `abcd efgh ijkl mnop`               |
-| `SCHOOL_EMAIL_ADDRESS` | Institutional domain for user restrictions   | `@school.edu.ph`                    |
-| `FRONTEND_APP_URL`     | Allowed origin for web production client     | `https://queyk.school.edu`          |
-| `LOCALHOST_APP_URL`    | Allowed origin for local web development     | `http://localhost:3000`             |
+| Variable               | Description                                  | Example / Required                     |
+| :--------------------- | :------------------------------------------- | :------------------------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string                 | `postgres://user:pass@host:5432/db`    |
+| `BETTER_AUTH_SECRET`   | Shared secret key for Better Auth encryption | Random 32+ char string                 |
+| `BETTER_AUTH_URL`      | Base URL for the Better Auth instance        | `http://localhost:8000`                |
+| `GOOGLE_CLIENT_ID`     | Google Cloud OAuth Client ID                 | `123456789.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | Google Cloud OAuth Client Secret             | `GOCSPX-xxxxxxxxxxxxxxxx`              |
+| `GEMINI_API_KEY`       | Google Gemini API key for emergency copy     | `AIzaSy...`                            |
+| `ANTHROPIC_API_KEY`    | Anthropic Claude API key (optional/fallback) | `sk-ant-...`                           |
+| `EXPO_ACCESS_TOKEN`    | Expo access token for mobile push service    | `your-expo-token`                      |
+| `APP_GMAIL_EMAIL`      | Sender email address for emergency blasts    | `alerts@school.edu`                    |
+| `APP_GMAIL_PASSWORD`   | App-specific password for email sender       | `abcd efgh ijkl mnop`                  |
+| `SCHOOL_EMAIL_ADDRESS` | Institutional domain for user restrictions   | `@school.edu.ph`                       |
+| `FRONTEND_APP_URL`     | Allowed origin for web production client     | `https://queyk.school.edu`             |
+| `LOCALHOST_APP_URL`    | Allowed origin for local web development     | `http://localhost:3000`                |
 
 ### Database Migrations
 

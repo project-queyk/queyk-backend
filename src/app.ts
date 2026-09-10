@@ -5,15 +5,16 @@ import helmet from "helmet";
 import express from "express";
 import bodyParser from "body-parser";
 import rateLimit from "express-rate-limit";
+import { toNodeHandler } from "better-auth/node";
 
-import userRouter from "./routes/users";
-import readingRouter from "./routes/readings";
-import emailRouter from "./routes/email";
-import pushNotificationRouter from "./routes/push-notifications";
-import notificationRouter from "./routes/notifications";
-import earthquakeRouter from "./routes/earthquakes";
 import iotRouter from "./routes/iot";
-// import tokenRouter from "./routes/tokens";
+import { auth } from "./lib/auth/auth";
+import userRouter from "./routes/users";
+import emailRouter from "./routes/email";
+import readingRouter from "./routes/readings";
+import earthquakeRouter from "./routes/earthquakes";
+import notificationRouter from "./routes/notifications";
+import pushNotificationRouter from "./routes/push-notifications";
 
 const app = express();
 
@@ -27,19 +28,24 @@ const limiter = rateLimit({
 });
 
 app.use(helmet());
-// app.use(limiter);
 app.use(morgan("dev"));
 app.use(
   cors({
     origin:
       process.env.NODE_ENV === "production"
         ? [process.env.FRONTEND_APP_URL!]
-        : [process.env.FRONTEND_APP_URL!, process.env.LOCALHOST_APP_URL ?? ""],
+        : [
+            process.env.FRONTEND_APP_URL!,
+            process.env.LOCALHOST_APP_URL ?? "",
+          ].filter(Boolean),
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "Token-Type"],
-  })
+  }),
 );
+
+app.all("/api/auth/{*any}", toNodeHandler(auth));
+
 app.use(express.json());
 app.use(bodyParser.json());
 
@@ -61,7 +67,5 @@ app.use("/v1/api/notifications", notificationRouter);
 app.use("/v1/api/iot/earthquakes", earthquakeRouter);
 app.use("/v1/api/earthquakes", limiter, earthquakeRouter);
 app.use("/v1/api/iot/device", iotRouter);
-
-// app.use("/v1/api/tokens", tokenRouter);
 
 export default app;
