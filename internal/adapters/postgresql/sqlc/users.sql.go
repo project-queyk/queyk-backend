@@ -7,20 +7,413 @@ package postgres
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getUserByEmailAndOauthId = `-- name: GetUserByEmailAndOauthId :one
+const createUser = `-- name: CreateUser :one
+INSERT INTO public."user" (
+    name, email, oauth_id, profile_image
+) VALUES (
+    $1, $2, $3, $4
+)
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type CreateUserParams struct {
+	Name         string `json:"name"`
+	Email        string `json:"email"`
+	OauthID      string `json:"oauth_id"`
+	ProfileImage string `json:"profile_image"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Name,
+		arg.Email,
+		arg.OauthID,
+		arg.ProfileImage,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const deleteUser = `-- name: DeleteUser :one
+DELETE FROM public."user"
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, deleteUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at FROM public."user"
+WHERE id = $1
+`
+
+func (q *Queries) GetUser(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserByEmailAndOAuthID = `-- name: GetUserByEmailAndOAuthID :one
 SELECT id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at FROM public."user"
 WHERE email = $1 AND oauth_id = $2
 `
 
-type GetUserByEmailAndOauthIdParams struct {
+type GetUserByEmailAndOAuthIDParams struct {
 	Email   string `json:"email"`
 	OauthID string `json:"oauth_id"`
 }
 
-func (q *Queries) GetUserByEmailAndOauthId(ctx context.Context, arg GetUserByEmailAndOauthIdParams) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByEmailAndOauthId, arg.Email, arg.OauthID)
+func (q *Queries) GetUserByEmailAndOAuthID(ctx context.Context, arg GetUserByEmailAndOAuthIDParams) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmailAndOAuthID, arg.Email, arg.OauthID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listSMSPhoneNumbers = `-- name: ListSMSPhoneNumbers :many
+SELECT DISTINCT phone_number::text AS phone_number
+FROM public."user"
+WHERE sms_notification = true AND phone_number IS NOT NULL
+`
+
+func (q *Queries) ListSMSPhoneNumbers(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listSMSPhoneNumbers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var phone_number string
+		if err := rows.Scan(&phone_number); err != nil {
+			return nil, err
+		}
+		items = append(items, phone_number)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeUserPhoneNumber = `-- name: RemoveUserPhoneNumber :one
+UPDATE public."user"
+SET phone_number = NULL, sms_notification = false
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+func (q *Queries) RemoveUserPhoneNumber(ctx context.Context, id pgtype.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, removeUserPhoneNumber, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserAlertNotification = `-- name: UpdateUserAlertNotification :one
+UPDATE public."user"
+SET alert_notification = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserAlertNotificationParams struct {
+	ID                pgtype.UUID `json:"id"`
+	AlertNotification bool        `json:"alert_notification"`
+}
+
+func (q *Queries) UpdateUserAlertNotification(ctx context.Context, arg UpdateUserAlertNotificationParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserAlertNotification, arg.ID, arg.AlertNotification)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserExpoPushToken = `-- name: UpdateUserExpoPushToken :one
+UPDATE public."user"
+SET expo_push_token = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserExpoPushTokenParams struct {
+	ID            pgtype.UUID `json:"id"`
+	ExpoPushToken pgtype.Text `json:"expo_push_token"`
+}
+
+func (q *Queries) UpdateUserExpoPushToken(ctx context.Context, arg UpdateUserExpoPushTokenParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserExpoPushToken, arg.ID, arg.ExpoPushToken)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserIsInSchool = `-- name: UpdateUserIsInSchool :one
+UPDATE public."user"
+SET is_in_school = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserIsInSchoolParams struct {
+	ID         pgtype.UUID `json:"id"`
+	IsInSchool pgtype.Bool `json:"is_in_school"`
+}
+
+func (q *Queries) UpdateUserIsInSchool(ctx context.Context, arg UpdateUserIsInSchoolParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserIsInSchool, arg.ID, arg.IsInSchool)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserPhoneNumber = `-- name: UpdateUserPhoneNumber :one
+UPDATE public."user"
+SET phone_number = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserPhoneNumberParams struct {
+	ID          pgtype.UUID `json:"id"`
+	PhoneNumber pgtype.Text `json:"phone_number"`
+}
+
+func (q *Queries) UpdateUserPhoneNumber(ctx context.Context, arg UpdateUserPhoneNumberParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserPhoneNumber, arg.ID, arg.PhoneNumber)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserPushNotification = `-- name: UpdateUserPushNotification :one
+UPDATE public."user"
+SET push_notification = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserPushNotificationParams struct {
+	ID               pgtype.UUID `json:"id"`
+	PushNotification bool        `json:"push_notification"`
+}
+
+func (q *Queries) UpdateUserPushNotification(ctx context.Context, arg UpdateUserPushNotificationParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserPushNotification, arg.ID, arg.PushNotification)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserRole = `-- name: UpdateUserRole :one
+UPDATE public."user"
+SET role = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserRoleParams struct {
+	ID   pgtype.UUID `json:"id"`
+	Role string      `json:"role"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserRole, arg.ID, arg.Role)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OauthID,
+		&i.Name,
+		&i.Email,
+		&i.PhoneNumber,
+		&i.Role,
+		&i.ProfileImage,
+		&i.IsInSchool,
+		&i.ExpoPushToken,
+		&i.WebPushSubscription,
+		&i.AlertNotification,
+		&i.PushNotification,
+		&i.SmsNotification,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUserSMSNotification = `-- name: UpdateUserSMSNotification :one
+UPDATE public."user"
+SET sms_notification = $2
+WHERE id = $1
+RETURNING id, oauth_id, name, email, phone_number, role, profile_image, is_in_school, expo_push_token, web_push_subscription, alert_notification, push_notification, sms_notification, created_at
+`
+
+type UpdateUserSMSNotificationParams struct {
+	ID              pgtype.UUID `json:"id"`
+	SmsNotification bool        `json:"sms_notification"`
+}
+
+func (q *Queries) UpdateUserSMSNotification(ctx context.Context, arg UpdateUserSMSNotificationParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserSMSNotification, arg.ID, arg.SmsNotification)
 	var i User
 	err := row.Scan(
 		&i.ID,

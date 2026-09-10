@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteUser(ctx context.Context, id pgtype.UUID) (User, error)
 	GetAllEarthquakes(ctx context.Context) ([]Earthquake, error)
 	GetAllReadings(ctx context.Context) ([]Reading, error)
 	GetAllStartEndEarthquakes(ctx context.Context, arg GetAllStartEndEarthquakesParams) ([]Earthquake, error)
@@ -18,7 +20,17 @@ type Querier interface {
 	GetBatteryLevel(ctx context.Context) (GetBatteryLevelRow, error)
 	GetFirstDataDate(ctx context.Context) (pgtype.Timestamptz, error)
 	GetTokenByTokenType(ctx context.Context, type_ string) (Token, error)
-	GetUserByEmailAndOauthId(ctx context.Context, arg GetUserByEmailAndOauthIdParams) (User, error)
+	GetUser(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserByEmailAndOAuthID(ctx context.Context, arg GetUserByEmailAndOAuthIDParams) (User, error)
+	ListSMSPhoneNumbers(ctx context.Context) ([]string, error)
+	RemoveUserPhoneNumber(ctx context.Context, id pgtype.UUID) (User, error)
+	UpdateUserAlertNotification(ctx context.Context, arg UpdateUserAlertNotificationParams) (User, error)
+	UpdateUserExpoPushToken(ctx context.Context, arg UpdateUserExpoPushTokenParams) (User, error)
+	UpdateUserIsInSchool(ctx context.Context, arg UpdateUserIsInSchoolParams) (User, error)
+	UpdateUserPhoneNumber(ctx context.Context, arg UpdateUserPhoneNumberParams) (User, error)
+	UpdateUserPushNotification(ctx context.Context, arg UpdateUserPushNotificationParams) (User, error)
+	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error)
+	UpdateUserSMSNotification(ctx context.Context, arg UpdateUserSMSNotificationParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
