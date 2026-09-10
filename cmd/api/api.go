@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5"
 	expo "github.com/oliveroneill/exponent-server-sdk-golang/sdk"
+	"github.com/project-queyk/queyk-backend/internal/index"
 	"github.com/wneessen/go-mail"
 )
 
@@ -49,6 +50,10 @@ func (app *application) mount() http.Handler {
 		MaxAge:           300,
 	}))
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	idxSvc := index.NewService(app.config.env)
+	idxHandler := index.NewHandler(idxSvc)
+	r.Get("/", idxHandler.Index)
 
 	return r
 }
