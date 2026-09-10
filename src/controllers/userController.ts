@@ -3,9 +3,11 @@ import { Request, Response } from "express";
 import { eq, ilike, count, desc, and, isNotNull } from "drizzle-orm";
 
 import { db } from "../drizzle";
-import { verifyToken } from "../lib/auth";
 import { user } from "../drizzle/schema";
+import { verifyToken } from "../lib/auth";
 import { formatZodError } from "../lib/utils";
+import { signUserJWT } from "../lib/auth/jwt";
+import { mobilePhoneNumberSchema } from "../types/users";
 import { getUserByEmailAndOauthId } from "../lib/service/user-service";
 import { schoolEmailSchema, tokenTypeUnionSchema } from "../lib/schema";
 import { mobilePhoneNumberSchema } from "../types/users";
@@ -53,10 +55,12 @@ export async function createUser(req: Request, res: Response) {
     const userExist = await getUserByEmailAndOauthId(email, oauthId);
 
     if (userExist) {
+      const token = signUserJWT(userExist);
+
       return res.status(200).send({
         message: "User already exists",
         statusCode: 200,
-        data: userExist,
+        data: { ...userExist, token },
       });
     }
 
@@ -68,11 +72,12 @@ export async function createUser(req: Request, res: Response) {
     };
 
     const [newUser] = await db.insert(user).values(newUserValues).returning();
+    const token = signUserJWT(newUser);
 
     return res.status(201).send({
       message: "User created successfully",
       statusCode: 201,
-      data: newUser,
+      data: { ...newUser, token },
     });
   } catch (error) {
     return res.status(500).send({
