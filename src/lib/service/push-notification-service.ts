@@ -1,7 +1,6 @@
 import { config } from "dotenv";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
-import webpush, { PushSubscription } from "web-push";
 
 import { db } from "../../drizzle";
 import { user } from "../../drizzle/schema";
@@ -11,12 +10,6 @@ config({ path: ".env.local" });
 const expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN,
 });
-
-webpush.setVapidDetails(
-  "mailto:" + process.env.APP_GMAIL_EMAIL,
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
 
 export async function getAllNotificationEnabledPushTokens(): Promise<
   { token: string; name: string }[] | null
@@ -29,7 +22,7 @@ export async function getAllNotificationEnabledPushTokens(): Promise<
   if (!users.length) return null;
 
   const validTokens = users.filter(
-    (u) => u.token && Expo.isExpoPushToken(u.token)
+    (u) => u.token && Expo.isExpoPushToken(u.token),
   );
 
   if (!validTokens.length) return null;
@@ -47,14 +40,14 @@ export async function getAdminNotificationEnabledPushTokens(): Promise<
       and(
         eq(user.role, "admin"),
         eq(user.pushNotification, true),
-        isNotNull(user.expoPushToken)
-      )
+        isNotNull(user.expoPushToken),
+      ),
     );
 
   if (!admins.length) return null;
 
   const validTokens = admins.filter(
-    (u) => u.token && Expo.isExpoPushToken(u.token)
+    (u) => u.token && Expo.isExpoPushToken(u.token),
   );
 
   if (!validTokens.length) return null;
@@ -62,31 +55,9 @@ export async function getAdminNotificationEnabledPushTokens(): Promise<
   return validTokens as { token: string; name: string }[];
 }
 
-export async function getAllNotificationEnabledWebPushSubscriptions(): Promise<
-  { subscription: PushSubscription; name: string }[] | null
-> {
-  const users = await db
-    .select({ subscription: user.webPushSubscription, name: user.name })
-    .from(user)
-    .where(eq(user.pushNotification, true));
-
-  if (!users.length) return null;
-
-  const validSubscriptions = users.filter(
-    (u) => u.subscription && (u.subscription as PushSubscription).endpoint
-  );
-
-  if (!validSubscriptions.length) return null;
-
-  return validSubscriptions as {
-    subscription: PushSubscription;
-    name: string;
-  }[];
-}
-
 export async function sendPushNotifications(
   magnitude: number,
-  message: string
+  message: string,
 ): Promise<{ success: boolean; tickets?: ExpoPushTicket[]; error?: string }> {
   try {
     const tokens = await getAllNotificationEnabledPushTokens();
@@ -121,30 +92,16 @@ export async function sendPushNotifications(
           console.error("Error sending push notification chunk:", error);
         }
       }
-    }
 
-    const subscriptions = await getAllNotificationEnabledWebPushSubscriptions();
-
-    if (subscriptions && subscriptions.length) {
-      const notificationPayload = JSON.stringify({
-        title: `🚨 Earthquake Alert: Magnitude ${magnitude}`,
-        body: message,
-        icon: "/icon.png",
-        data: { magnitude, type: "earthquake" },
-      });
-
-      for (const { subscription } of subscriptions) {
-        try {
-          await webpush.sendNotification(subscription, notificationPayload);
-        } catch (error) {
-          console.error("Error sending web push notification:", error);
-        }
-      }
+      return {
+        success: true,
+        tickets,
+      };
     }
 
     return {
-      success: true,
-      tickets: tokens ? [] : undefined,
+      success: false,
+      error: "No notification-enabled users with valid push tokens found",
     };
   } catch (error) {
     console.error("Error in sendPushNotifications:", error);
@@ -157,7 +114,7 @@ export async function sendPushNotifications(
 
 export async function sendAdminPushNotifications(
   title: string,
-  message: string
+  message: string,
 ): Promise<{ success: boolean; tickets?: ExpoPushTicket[]; error?: string }> {
   try {
     const tokens = await getAdminNotificationEnabledPushTokens();
@@ -188,8 +145,7 @@ export async function sendAdminPushNotifications(
         try {
           const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
           tickets.push(...ticketChunk);
-        } catch {
-        }
+        } catch {}
       }
 
       return {

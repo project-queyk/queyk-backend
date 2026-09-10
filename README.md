@@ -8,7 +8,7 @@
 [![Socket.io](https://img.shields.io/badge/Socket.io-4.8-black.svg?logo=socket.io)](https://socket.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Queyk Backend is the central server application powering the Queyk disaster resilience ecosystem. Built with Express 5, TypeScript, Drizzle ORM, and PostgreSQL, it ingests live seismic telemetry from IoT hardware, streams real-time updates over WebSockets, generates contextual AI emergency alerts, and coordinates multi-channel notification dispatches across Web, Mobile, and Desktop clients.
+Queyk Backend is the central server application powering the Queyk disaster resilience ecosystem. Built with Express 5, TypeScript, Drizzle ORM, and PostgreSQL, it ingests live seismic telemetry from IoT hardware, streams real-time updates over WebSockets, generates contextual AI emergency alerts, and coordinates notification dispatches across Mobile and Web clients.
 
 ---
 
@@ -23,7 +23,6 @@ The backend serves as the core broker between the Omron D7S seismic sensor units
 - **AI-Driven Emergency Alert Generation**: Integrations with **Google Gemini** and **Anthropic Claude** to generate concise, urgent, non-panicking emergency notification copy tailored to detected earthquake magnitude levels.
 - **Multi-Channel Notification Dispatch**:
   - **Expo Push Notifications**: High-priority push alerts delivered directly to mobile clients running iOS and Android.
-  - **Web Push Notifications**: Browser-level push alerts using the standard VAPID protocol for progressive web apps.
   - **Emergency Email Blasts**: Automated notification dispatch via Nodemailer and SMTP to campus leadership and emergency response personnel.
 - **Unified Identity & Access Management**:
   - Google OAuth profile ingestion with institutional email domain enforcement (`SCHOOL_EMAIL_ADDRESS`).
@@ -51,17 +50,15 @@ flowchart TD
         G --> H[Notification Pipeline]
     end
 
-    subgraph NotificationChannels ["Multi-Channel Dispatch"]
+    subgraph NotificationChannels ["Notification Dispatch"]
         H --> I[Expo Server SDK -> Mobile Push]
-        H --> J[Web Push / VAPID -> Web Browsers]
-        H --> K[Nodemailer / SMTP -> Emergency Email]
+        H --> J[Nodemailer / SMTP -> Emergency Email]
     end
 
     subgraph Clients ["Connected Clients"]
-        E --> L[Queyk Web Dashboard]
-        E --> M[Queyk Desktop Client]
-        I --> N[Queyk Mobile App]
-        J --> L
+        E --> K[Queyk Web Dashboard]
+        E --> L[Queyk Desktop Client]
+        I --> M[Queyk Mobile App]
     end
 ```
 
@@ -76,7 +73,6 @@ flowchart TD
 - **AI Integrations**: [@google/genai](https://www.npmjs.com/package/@google/genai) & [@anthropic-ai/sdk](https://www.npmjs.com/package/@anthropic-ai/sdk)
 - **Push & Messaging**:
   - [expo-server-sdk](https://github.com/expo/expo-server-sdk-node) (Expo Push Notifications)
-  - [web-push](https://github.com/web-push-libs/web-push) (VAPID Web Push)
   - [nodemailer](https://nodemailer.com/) (Emergency email dispatches)
 - **Validation**: [Zod v4](https://zod.dev/) & [validator.js](https://github.com/validatorjs/validator.js)
 - **Security & Tokens**: [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) & [nanoid](https://github.com/ai/nanoid)
@@ -86,6 +82,7 @@ flowchart TD
 ## 4. API Endpoints Reference
 
 ### 🔐 Authentication & Users (`/v1/api/users`)
+
 - `POST /v1/api/users` — User sign-in / registration (issues stateless JWT).
 - `GET /v1/api/users` — Paginated user directory (admin).
 - `GET /v1/api/users/:userId` — Retrieve user profile.
@@ -98,17 +95,18 @@ flowchart TD
 - `DELETE /v1/api/users/:userId` — Remove user profile.
 
 ### 📈 Seismic Telemetry (`/v1/api/readings` & `/v1/api/iot/readings`)
+
 - `POST /v1/api/iot/readings` — Ingest 5-minute SI, PGA, battery, and signal strength summary from IoT unit.
 - `GET /v1/api/readings` — Retrieve readings with query parameters (`range`, `platform`, downsampled resolution).
 
 ### 🚨 Seismic Events (`/v1/api/earthquakes` & `/v1/api/iot/earthquakes`)
+
 - `POST /v1/api/iot/earthquakes` — Ingest detected earthquake event (magnitude, duration) and trigger automated alerts.
 - `GET /v1/api/earthquakes` — Retrieve historical earthquake logs.
 
 ### 🔔 Notifications & Alerts (`/v1/api/push-notifications`, `/v1/api/email`, `/v1/api/notifications`)
-- `POST /v1/api/push-notifications` — Trigger instant push broadcast (with AI copy generation).
-- `POST /v1/api/push-notifications/subscribe` — Register Web Push (VAPID) browser subscription.
-- `POST /v1/api/push-notifications/unsubscribe` — Remove Web Push subscription.
+
+- `POST /v1/api/push-notifications` — Trigger instant mobile push broadcast (with AI copy generation).
 - `POST /v1/api/email/alert` — Dispatch emergency broadcast email.
 - `GET /v1/api/notifications` — Retrieve historical alert log.
 
@@ -166,11 +164,13 @@ queyk-backend/
 ### Installation
 
 1. Navigate to the backend directory:
+
    ```bash
    cd queyk-backend
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -184,21 +184,19 @@ queyk-backend/
 
 Configure the following variables in `.env.local`:
 
-| Variable | Description | Example / Required |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host:5432/db` |
-| `JWT_SECRET` | Secret key for signing user session JWTs | Random 32+ char string |
-| `JWT_EXPIRES_IN` | Duration before user JWT expires | `7d` |
-| `GEMINI_API_KEY` | Google Gemini API key for emergency copy | `AIzaSy...` |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API key (optional/fallback) | `sk-ant-...` |
-| `EXPO_ACCESS_TOKEN` | Expo access token for mobile push service | `your-expo-token` |
-| `VAPID_PUBLIC_KEY` | Web Push VAPID public key | Generated via `web-push` |
-| `VAPID_PRIVATE_KEY` | Web Push VAPID private key | Generated via `web-push` |
-| `APP_GMAIL_EMAIL` | Sender email address for emergency blasts | `alerts@school.edu` |
-| `APP_GMAIL_PASSWORD` | App-specific password for email sender | `abcd efgh ijkl mnop` |
-| `SCHOOL_EMAIL_ADDRESS` | Institutional domain for user restrictions | `@school.edu.ph` |
-| `FRONTEND_APP_URL` | Allowed origin for web production client | `https://queyk.school.edu` |
-| `LOCALHOST_APP_URL` | Allowed origin for local web development | `http://localhost:3000` |
+| Variable               | Description                                  | Example / Required                  |
+| :--------------------- | :------------------------------------------- | :---------------------------------- |
+| `DATABASE_URL`         | PostgreSQL connection string                 | `postgres://user:pass@host:5432/db` |
+| `JWT_SECRET`           | Secret key for signing user session JWTs     | Random 32+ char string              |
+| `JWT_EXPIRES_IN`       | Duration before user JWT expires             | `7d`                                |
+| `GEMINI_API_KEY`       | Google Gemini API key for emergency copy     | `AIzaSy...`                         |
+| `ANTHROPIC_API_KEY`    | Anthropic Claude API key (optional/fallback) | `sk-ant-...`                        |
+| `EXPO_ACCESS_TOKEN`    | Expo access token for mobile push service    | `your-expo-token`                   |
+| `APP_GMAIL_EMAIL`      | Sender email address for emergency blasts    | `alerts@school.edu`                 |
+| `APP_GMAIL_PASSWORD`   | App-specific password for email sender       | `abcd efgh ijkl mnop`               |
+| `SCHOOL_EMAIL_ADDRESS` | Institutional domain for user restrictions   | `@school.edu.ph`                    |
+| `FRONTEND_APP_URL`     | Allowed origin for web production client     | `https://queyk.school.edu`          |
+| `LOCALHOST_APP_URL`    | Allowed origin for local web development     | `http://localhost:3000`             |
 
 ### Database Migrations
 
