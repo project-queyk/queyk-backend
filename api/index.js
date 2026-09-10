@@ -1865,38 +1865,44 @@ function getBucketMs(rangeDays) {
   return 24 * 60 * 60 * 1e3;
 }
 function downsampleReadings(readings, start, end) {
-  if (readings.length === 0) return readings;
-  const rangeDays = (end.getTime() - start.getTime()) / (24 * 60 * 60 * 1e3);
+  const rangeDays = (end.getTime() - start.getTime()) / (1e3 * 60 * 60 * 24);
   const bucketMs = getBucketMs(rangeDays);
   const buckets = new Map();
   for (const r of readings) {
     const t = new Date(r.createdAt).getTime();
     const bucketKey = Math.floor(t / bucketMs) * bucketMs;
-    if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
-    buckets.get(bucketKey).push(r);
+    const list = buckets.get(bucketKey);
+    if (list) list.push(r);
+    else buckets.set(bucketKey, [r]);
   }
-  return Array.from(buckets.entries()).sort(([a], [b]) => a - b).map(([bucketKey, group]) => {
-    const base = group[group.length - 1];
+  return Array.from(buckets.entries()).sort(([a], [b]) => a - b).map(([, group]) => {
+    const base = group[0];
     return {
       ...base,
-      createdAt: new Date(bucketKey).toISOString(),
-      siAverage: group.reduce((s, r) => s + r.siAverage, 0) / group.length,
+      createdAt: new Date(base.createdAt).toISOString(),
+      siAverage: group.reduce((sum, r) => sum + r.siAverage, 0) / group.length,
       siMinimum: Math.min(...group.map((r) => r.siMinimum)),
       siMaximum: Math.max(...group.map((r) => r.siMaximum)),
-      battery: group.reduce((s, r) => s + r.battery, 0) / group.length,
-      signalStrength: base.signalStrength
+      battery: group[group.length - 1].battery,
+      signalStrength: group[group.length - 1].signalStrength
     };
   });
 }
-var systemInstruction = `Talk like a regular person. "All clear" or "Activity detected" or "Warning", then what's happening, ground movement, and what to expect tomorrow. One sentence, natural tone, no markdown.`;
+var systemInstruction = `You are a seismic analyst AI for the Queyk Earthquake Early Warning System. Your task is to analyze historical seismic readings and provide a clear, concise, and professional summary of the seismic activity over the given date range.
+Analyze the provided seismic data (which includes dates, SI values, peak ground acceleration, and sensor status) and generate a short summary that includes:
+- An overview of seismic activity (e.g., whether readings were within normal background levels or showed significant peaks).
+- Peak activity identified (highest SI value, when it occurred, and its risk level).
+- Trends or patterns observed during the period.
+- General safety assessment based on the data.
+Keep the tone informative, objective, and reassuring. Avoid unnecessary alarmism. The summary should be suitable for displaying on a dashboard for school safety administrators. Keep it concise (around 3-5 sentences).`;
 async function createReading(req, res) {
   const { siAverage, siMinimum, siMaximum, battery, signalStrength } = req.body;
   const missingFields = [];
-  if (siAverage == null) missingFields.push("siAverage");
-  if (siMinimum == null) missingFields.push("siMinimum");
-  if (siMaximum == null) missingFields.push("siMaximum");
-  if (battery == null) missingFields.push("battery");
-  if (signalStrength == null) missingFields.push("signalStrength");
+  if (siAverage === void 0) missingFields.push("siAverage");
+  if (siMinimum === void 0) missingFields.push("siMinimum");
+  if (siMaximum === void 0) missingFields.push("siMaximum");
+  if (battery === void 0) missingFields.push("battery");
+  if (signalStrength === void 0) missingFields.push("signalStrength");
   if (missingFields.length > 0) {
     return res.status(400).send({
       message: `Missing required fields: ${missingFields.join(", ")}`,
@@ -1905,11 +1911,11 @@ async function createReading(req, res) {
     });
   }
   const readingValues = {
-    siAverage,
-    siMinimum,
-    siMaximum,
-    battery,
-    signalStrength
+    siAverage: Number(siAverage),
+    siMinimum: Number(siMinimum),
+    siMaximum: Number(siMaximum),
+    battery: Number(battery),
+    signalStrength: String(signalStrength)
   };
   const isValidReadingValues = createReadingSchema.safeParse(readingValues);
   if (isValidReadingValues.error) {
@@ -1931,17 +1937,15 @@ async function createReading(req, res) {
     const [newReading] = await db.insert(reading).values(isValidReadingValues.data).returning();
     if (!newReading) {
       return res.status(500).send({
-        message: "Failed to create reading",
-        error: "Internal Server Error",
+        message: "Error creating reading",
+        error: "Internal server error",
         statusCode: 500
       });
     }
     try {
       const io2 = getIO();
-      if (io2) {
-        io2.emit("newReading", newReading);
-      }
-    } catch (socketError) {
+      io2.emit("reading", newReading);
+    } catch {
     }
     return res.status(201).send({
       message: "Reading created successfully",
@@ -1950,8 +1954,8 @@ async function createReading(req, res) {
     });
   } catch (error) {
     return res.status(500).send({
-      message: "An unexpected error occurred while creating the reading. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+      message: error instanceof Error ? error.message : "Error creating reading",
+      error: "Internal server error",
       statusCode: 500
     });
   }
@@ -1977,7 +1981,7 @@ async function getReadings(req, res) {
       const readingsRaw = await getAllStartEndReadings(start, end);
       const readingsMapped = Array.isArray(readingsRaw) ? readingsRaw.map((r) => ({
         ...r,
-        createdAt: r.createdAt.toISOString(),
+        createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : new Date(r.createdAt).toISOString(),
         riskLevel: getSeismicRiskLevelForReading(r),
         isSafe: isReadingSeismicSafe(r)
       })) : [];
@@ -2083,18 +2087,23 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
           siAverage: peakAct.siAverage
         };
       }
-      const { generateSeismicReportBuffer: generateSeismicReportBuffer2 } = await Promise.resolve().then(() => (init_pdf_generator(), pdf_generator_exports));
-      const pdfBuffer = await generateSeismicReportBuffer2({
-        readings: readings2,
-        dateRange: `${actualFormattedStart} - ${actualFormattedEnd}`,
-        peakMagnitude,
-        avgMagnitude,
-        significantReadings,
-        peakActivity,
-        batteryLevel: batteryLevel?.battery || 0,
-        aiSummary
-      });
-      const pdfBase64 = pdfBuffer.toString("base64");
+      let pdfBase64 = null;
+      try {
+        const { generateSeismicReportBuffer: generateSeismicReportBuffer2 } = await Promise.resolve().then(() => (init_pdf_generator(), pdf_generator_exports));
+        const pdfBuffer = await generateSeismicReportBuffer2({
+          readings: readings2,
+          dateRange: `${actualFormattedStart} - ${actualFormattedEnd}`,
+          peakMagnitude,
+          avgMagnitude,
+          significantReadings,
+          peakActivity,
+          batteryLevel: batteryLevel?.battery || 0,
+          aiSummary
+        });
+        pdfBase64 = pdfBuffer.toString("base64");
+      } catch (pdfError) {
+        console.error("Failed to generate PDF report buffer:", pdfError);
+      }
       return res.status(200).send({
         message: "Readings retrieved successfully",
         statusCode: 200,
@@ -2117,8 +2126,9 @@ Battery level: ${batteryLevel?.battery || "Unknown"}%`;
       data: readingsWithRisk
     });
   } catch (error) {
+    console.error("Error in getReadings:", error);
     return res.status(500).send({
-      message: "An unexpected error occurred while getting all the readings. Please try again later. If the problem persists, contact support.",
+      message: error instanceof Error ? error.message : "An unexpected error occurred while getting all the readings.",
       error: "Internal Server Error",
       statusCode: 500
     });
@@ -2145,7 +2155,7 @@ async function getReading(req, res) {
     const [data] = await db.select().from(reading).where(eq6(reading.id, readingId));
     if (!data) {
       return res.status(404).send({
-        message: "Reading with the specified ID could not be found",
+        message: "Reading not found",
         error: "Not Found",
         statusCode: 404
       });
@@ -2157,8 +2167,8 @@ async function getReading(req, res) {
     });
   } catch (error) {
     return res.status(500).send({
-      message: "An unexpected error occurred while getting the reading. Please try again later. If the problem persists, contact support.",
-      error: "Internal Server Error",
+      message: error instanceof Error ? error.message : "Error getting reading",
+      error: "Internal server error",
       statusCode: 500
     });
   }
