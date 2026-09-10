@@ -28,7 +28,9 @@ The backend serves as the core broker between the Omron D7S seismic sensor units
 - **Unified Identity & Access Management (Better Auth)**:
   - Integrated with **Better Auth** using the Drizzle ORM adapter.
   - Shared PostgreSQL session and user store with `queyk-web` (`user`, `session`, `account`, `verification` tables).
-  - Bearer token authentication plugin support for mobile and API clients.
+  - **Dual-Mode Token Verification**:
+    1. **User Sessions**: Validates active Better Auth bearer tokens from Web and Mobile clients, populating `req.user` and `req.session`.
+    2. **IoT Hardware Tokens**: Validates dedicated device tokens against the `token` table (`Token-Type: iot`) for ESP32 seismic sensor units.
   - Automatic account linking for verified Google OAuth accounts.
   - Institutional email domain filtering (`SCHOOL_EMAIL_ADDRESS`).
   - Role-based authorization (`admin` / `user`) protecting sensitive administrative endpoints.
