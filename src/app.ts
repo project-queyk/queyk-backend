@@ -27,17 +27,39 @@ const limiter = rateLimit({
   headers: true,
 });
 
+const allowedOrigins = [
+  process.env.FRONTEND_APP_URL,
+  process.env.LOCALHOST_APP_URL,
+  "http://localhost:3000",
+  "http://localhost:9245",
+  "http://127.0.0.1:9245",
+  "http://localhost:9246",
+  "http://127.0.0.1:9246",
+  "wails://localhost",
+  "wails://localhost:9245",
+  "wails://wails",
+  "http://wails.localhost",
+].filter(Boolean) as string[];
+
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? [process.env.FRONTEND_APP_URL!]
-        : [
-            process.env.FRONTEND_APP_URL!,
-            process.env.LOCALHOST_APP_URL ?? "",
-          ].filter(Boolean),
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || origin === "null") {
+        return callback(null, true);
+      }
+
+      if (
+        process.env.NODE_ENV !== "production" &&
+        (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+          origin.startsWith("wails://"))
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "Token-Type"],
