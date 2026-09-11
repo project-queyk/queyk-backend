@@ -8,6 +8,7 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// src/lib/utils.ts
 function formatZodError(error) {
   return error.issues.map((err) => {
     const field = err.path.join(".");
@@ -40,6 +41,7 @@ var init_utils = __esm({
   }
 });
 
+// src/lib/pdf-generator.ts
 var pdf_generator_exports = {};
 __export(pdf_generator_exports, {
   generateSeismicReportBuffer: () => generateSeismicReportBuffer
@@ -107,7 +109,7 @@ function generateSeismicReportBuffer(data) {
       );
       doc.text(`Report Period: ${reportPeriodText}`, 20, yPosition);
       doc.text(
-        `Generated: ${(new Date()).toLocaleString("en-US", {
+        `Generated: ${(/* @__PURE__ */ new Date()).toLocaleString("en-US", {
           month: "long",
           day: "numeric",
           year: "numeric",
@@ -277,6 +279,7 @@ var init_pdf_generator = __esm({
   }
 });
 
+// src/app.ts
 import "dotenv/config";
 import cors from "cors";
 import morgan from "morgan";
@@ -286,6 +289,7 @@ import bodyParser from "body-parser";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
 
+// src/routes/iot.ts
 import express from "express";
 var resetFlag = false;
 var router = express.Router();
@@ -303,10 +307,15 @@ router.post("/reset-clear", (req, res) => {
 });
 var iot_default = router;
 
+// src/lib/auth/auth.ts
+import { config as config2 } from "dotenv";
 import { betterAuth } from "better-auth";
 import { bearer } from "better-auth/plugins";
+import { createAuthMiddleware } from "better-auth/api";
+import { parseSetCookieHeader } from "better-auth/cookies";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
+// src/drizzle/index.ts
 import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -315,6 +324,7 @@ var connectionString = process.env.DATABASE_URL;
 var client = postgres(connectionString, { prepare: false });
 var db = drizzle(client);
 
+// src/drizzle/schema.ts
 import { nanoid } from "nanoid";
 import { relations } from "drizzle-orm";
 import {
@@ -348,7 +358,7 @@ var user = pgTable("user", {
   phoneNumber: text("phone_number"),
   isInSchool: boolean("is_in_school").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull()
+  updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull()
 });
 var session = pgTable(
   "session",
@@ -357,7 +367,7 @@ var session = pgTable(
     expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").$onUpdate(() => new Date()).notNull(),
+    updatedAt: timestamp("updated_at").$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" })
@@ -379,7 +389,7 @@ var account = pgTable(
     scope: text("scope"),
     password: text("password"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").$onUpdate(() => new Date()).notNull()
+    updatedAt: timestamp("updated_at").$onUpdate(() => /* @__PURE__ */ new Date()).notNull()
   },
   (table) => [index("account_userId_idx").on(table.userId)]
 );
@@ -391,7 +401,7 @@ var verification = pgTable(
     value: text("value").notNull(),
     expiresAt: timestamp("expires_at").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull()
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull()
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
@@ -416,7 +426,7 @@ var token = pgTable("token", {
   type: tokenTypeEnum("type").notNull(),
   token: text("token").notNull(),
   expiredAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date())
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var reading = pgTable("reading", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -425,13 +435,13 @@ var reading = pgTable("reading", {
   siMaximum: doublePrecision("si_maximum").notNull(),
   battery: doublePrecision("battery").notNull(),
   signalStrength: text("signal_strength").notNull(),
-  createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date())
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var earthquake = pgTable("earthquake", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   magnitude: doublePrecision("magnitude").notNull(),
   duration: integer("duration").notNull(),
-  createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date())
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var floorPlan = pgTable("floor_plan", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -439,7 +449,7 @@ var floorPlan = pgTable("floor_plan", {
   imageUrl: text("image_url").notNull(),
   buildingName: text("building_name").notNull(),
   floorNumber: integer("floor_number").notNull(),
-  createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date())
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 var location = pgTable("location", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -451,9 +461,14 @@ var location = pgTable("location", {
   radiusMeters: doublePrecision("radius_meters").notNull(),
   displayX: integer("display_x").notNull(),
   displayY: integer("display_y").notNull(),
-  createdAt: timestamp("created_at").notNull().$defaultFn(() => new Date())
+  createdAt: timestamp("created_at").notNull().$defaultFn(() => /* @__PURE__ */ new Date())
 });
 
+// src/lib/auth/auth.ts
+config2({ path: ".env.local" });
+config2();
+var schoolDomain = process.env.SCHOOL_EMAIL_ADDRESS;
+var googleHd = schoolDomain ? schoolDomain.replace(/^@/, "") : void 0;
 var auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -471,6 +486,15 @@ var auth = betterAuth({
     }
   },
   user: {
+    validateUserInfo: async ({ user: user2 }) => {
+      const allowedDomain = process.env.SCHOOL_EMAIL_ADDRESS;
+      if (allowedDomain && (!user2.email || !user2.email.endsWith(allowedDomain))) {
+        return {
+          error: "AccessDenied",
+          errorDescription: `Email must belong to ${allowedDomain}`
+        };
+      }
+    },
     additionalFields: {
       role: {
         type: "string",
@@ -515,33 +539,64 @@ var auth = betterAuth({
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || ""
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      prompt: "select_account",
+      ...googleHd ? { hd: googleHd } : {}
     }
   },
   trustedOrigins: [
     process.env.FRONTEND_APP_URL || "http://localhost:3000",
     process.env.LOCALHOST_APP_URL || "http://localhost:8080",
     "http://localhost:3000",
-    "http://localhost:8080"
+    "http://localhost:9245",
+    "http://127.0.0.1:9245",
+    "http://localhost:9246",
+    "http://127.0.0.1:9246",
+    "wails://localhost",
+    "wails://localhost:9245",
+    "wails://wails",
+    "http://wails.localhost"
   ],
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path.startsWith("/callback")) {
+        const location2 = ctx.context.responseHeaders?.get("location") || ctx.context.responseHeaders?.get("Location");
+        const setCookie = ctx.context.responseHeaders?.get("set-cookie");
+        if (location2 && setCookie) {
+          const parsed = parseSetCookieHeader(setCookie);
+          const cookieName = ctx.context.authCookies.sessionToken.name;
+          const token2 = parsed.get(cookieName)?.value;
+          if (token2) {
+            const redirectUrl = new URL(location2, ctx.context.baseURL || "http://localhost:8080");
+            redirectUrl.searchParams.set("token", token2);
+            ctx.setHeader("Location", redirectUrl.toString());
+          }
+        }
+      }
+    })
+  },
   plugins: [bearer()]
 });
 
+// src/routes/users.ts
 import { Router } from "express";
 
-import { config as config4 } from "dotenv";
+// src/controllers/userController.ts
+import { config as config5 } from "dotenv";
 import { eq as eq3, ilike, count, desc, and as and3, isNotNull } from "drizzle-orm";
 
+// src/lib/auth/index.ts
 import { and, eq } from "drizzle-orm";
 import { fromNodeHeaders } from "better-auth/node";
 init_utils();
 
-import { config as config2 } from "dotenv";
+// src/lib/schema/index.ts
+import { config as config3 } from "dotenv";
 import { z } from "zod/v4";
-config2({ path: ".env.local" });
-var schoolDomain = process.env.SCHOOL_EMAIL_ADDRESS ?? "@school.edu";
-var schoolEmailSchema = z.email().refine((email) => email.endsWith(schoolDomain), {
-  message: `Email must belong to the school's domain (${schoolDomain}). Example: "alice${schoolDomain}"`
+config3({ path: ".env.local" });
+var schoolDomain2 = process.env.SCHOOL_EMAIL_ADDRESS ?? "@school.edu";
+var schoolEmailSchema = z.email().refine((email) => email.endsWith(schoolDomain2), {
+  message: `Email must belong to the school's domain (${schoolDomain2}). Example: "alice${schoolDomain2}"`
 });
 var roleUnion = [z.literal("user"), z.literal("admin")];
 var tokenTypeUnion = [
@@ -600,6 +655,7 @@ var createEarthquakeSchema = earthquakeSchema.omit({
   createdAt: true
 });
 
+// src/lib/auth/index.ts
 async function verifyToken(req) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -686,11 +742,13 @@ async function verifyToken(req) {
   }
 }
 
+// src/controllers/userController.ts
 init_utils();
 
+// src/lib/auth/jwt.ts
 import jwt from "jsonwebtoken";
-import { config as config3 } from "dotenv";
-config3({ path: ".env.local" });
+import { config as config4 } from "dotenv";
+config4({ path: ".env.local" });
 var JWT_SECRET = process.env.JWT_SECRET;
 var JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 function signUserJWT({
@@ -711,12 +769,14 @@ function signUserJWT({
   });
 }
 
+// src/types/users.ts
 import z2 from "zod";
 import validator from "validator";
 var mobilePhoneNumberSchema = z2.string().refine((val) => validator.isMobilePhone(val, "en-PH"), {
   message: "Invalid mobile phone number for en-PH locale"
 });
 
+// src/lib/service/user-service.ts
 import { and as and2, eq as eq2 } from "drizzle-orm";
 async function getUserByEmailAndOauthId(email, oauthId) {
   const [foundUser] = await db.select().from(user).where(and2(eq2(user.oauthId, oauthId), eq2(user.email, email)));
@@ -727,7 +787,8 @@ async function getUserByEmailAndOauthId(email, oauthId) {
   };
 }
 
-config4({ path: ".env.local" });
+// src/controllers/userController.ts
+config5({ path: ".env.local" });
 async function createUser(req, res) {
   const { name, email, profileImage, oauthId } = req.body;
   const missingFields = [];
@@ -1409,6 +1470,7 @@ async function updateIsInSchool(req, res) {
   }
 }
 
+// src/routes/users.ts
 var isSMSNotificationPreferencesUpdated = false;
 var router2 = Router();
 router2.post("/", async (req, res, next) => {
@@ -1549,14 +1611,17 @@ router2.patch(
 );
 var users_default = router2;
 
+// src/routes/email.ts
 import { Router as Router2 } from "express";
 
-import { config as config7 } from "dotenv";
+// src/controllers/emailController.ts
+import { config as config8 } from "dotenv";
 
-import { config as config5 } from "dotenv";
+// src/lib/service/email-service.ts
+import { config as config6 } from "dotenv";
 import { eq as eq4 } from "drizzle-orm";
 import nodemailer from "nodemailer";
-config5({ path: ".env.local" });
+config6({ path: ".env.local" });
 var transporter = nodemailer.createTransport({
   service: "gmail",
   host: "smtp.gmail.com",
@@ -1573,10 +1638,11 @@ async function getAllNotificationEnabledEmails() {
   return emails;
 }
 
-import { config as config6 } from "dotenv";
+// src/lib/service/push-notification-service.ts
+import { config as config7 } from "dotenv";
 import { and as and4, eq as eq5, isNotNull as isNotNull2 } from "drizzle-orm";
 import { Expo } from "expo-server-sdk";
-config6({ path: ".env.local" });
+config7({ path: ".env.local" });
 var expo = new Expo({
   accessToken: process.env.EXPO_ACCESS_TOKEN
 });
@@ -1636,7 +1702,8 @@ async function sendPushNotifications(magnitude, message) {
   }
 }
 
-config7({ path: ".env.local" });
+// src/controllers/emailController.ts
+config8({ path: ".env.local" });
 async function sendEmail(req, res) {
   const { magnitude } = req.body;
   if (!magnitude) {
@@ -1745,7 +1812,7 @@ Queyk Alert System`,
                 <!-- Footer -->
                 <tr>
                   <td style="background-color: #f1f3f5; text-align: center; padding: 20px; font-size: 12px; color: #556575; border-top: 1px solid #e9ecef; border-radius: 0 0 12px 12px;">
-                    <p style="margin: 0;">&copy; ${(new Date()).getFullYear()} Queyk. All rights reserved.</p>
+                    <p style="margin: 0;">&copy; ${(/* @__PURE__ */ new Date()).getFullYear()} Queyk. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -1797,6 +1864,7 @@ Queyk Alert System`,
   }
 }
 
+// src/routes/email.ts
 var router3 = Router2();
 router3.post("/", async (req, res, next) => {
   try {
@@ -1807,19 +1875,23 @@ router3.post("/", async (req, res, next) => {
 });
 var email_default = router3;
 
+// src/routes/readings.ts
 import { Router as Router3 } from "express";
 
+// src/controllers/readingController.ts
 import { eq as eq6 } from "drizzle-orm";
 
+// src/lib/socket.ts
 import { Server as SocketIOServer } from "socket.io";
 var io;
 var getIO = () => {
   return io || null;
 };
 
-import { config as config8 } from "dotenv";
+// src/lib/service/claude.ts
+import { config as config9 } from "dotenv";
 import Anthropic from "@anthropic-ai/sdk";
-config8({ path: ".env.local" });
+config9({ path: ".env.local" });
 var anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
@@ -1839,8 +1911,10 @@ async function generateResponse(contents, systemInstruction5) {
   return textContent && textContent.type === "text" ? textContent.text : "";
 }
 
+// src/controllers/readingController.ts
 init_utils();
 
+// src/lib/service/reading-service.ts
 import { and as and5, gte, lte, desc as desc2, asc } from "drizzle-orm";
 async function getAllReadings() {
   const readings = await db.select().from(reading);
@@ -1862,7 +1936,7 @@ async function getFirstDataDate() {
 async function getBatteryLevel() {
   const [readings] = await db.select({ battery: reading.battery, createdAt: reading.createdAt }).from(reading).orderBy(desc2(reading.createdAt)).limit(1);
   if (!readings) return null;
-  const now = new Date();
+  const now = /* @__PURE__ */ new Date();
   const lastReadingDate = readings.createdAt instanceof Date ? readings.createdAt : new Date(readings.createdAt);
   const diffMs = now.getTime() - lastReadingDate.getTime();
   const diffMinutes = Math.abs(diffMs) / (1e3 * 60);
@@ -1872,6 +1946,7 @@ async function getBatteryLevel() {
   return readings;
 }
 
+// src/controllers/readingController.ts
 function getBucketMs(rangeDays) {
   if (rangeDays <= 1) return 30 * 60 * 1e3;
   if (rangeDays <= 3) return 60 * 60 * 1e3;
@@ -1882,7 +1957,7 @@ function getBucketMs(rangeDays) {
 function downsampleReadings(readings, start, end) {
   const rangeDays = (end.getTime() - start.getTime()) / (1e3 * 60 * 60 * 24);
   const bucketMs = getBucketMs(rangeDays);
-  const buckets = new Map();
+  const buckets = /* @__PURE__ */ new Map();
   for (const r of readings) {
     const t = new Date(r.createdAt).getTime();
     const bucketKey = Math.floor(t / bucketMs) * bucketMs;
@@ -2189,6 +2264,7 @@ async function getReading(req, res) {
   }
 }
 
+// src/routes/readings.ts
 var router4 = Router3();
 router4.post("/", async (req, res, next) => {
   try {
@@ -2216,11 +2292,14 @@ router4.get(
 );
 var readings_default = router4;
 
+// src/routes/earthquakes.ts
 import { Router as Router4 } from "express";
 
+// src/controllers/earthquakeController.ts
 import { eq as eq7 } from "drizzle-orm";
 init_utils();
 
+// src/lib/service/earthquake-service.ts
 import { and as and6, gte as gte2, lte as lte2 } from "drizzle-orm";
 async function getAllEarthquakes() {
   const earthquakes = await db.select().from(earthquake);
@@ -2238,9 +2317,10 @@ async function getAllStartEndEarthquakes(startDate, endDate) {
   return earthquakes;
 }
 
-import { config as config9 } from "dotenv";
+// src/lib/service/gemini.ts
+import { config as config10 } from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-config9({ path: ".env.local" });
+config10({ path: ".env.local" });
 var GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 var ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 async function generateResponse2(contents, systemInstruction5) {
@@ -2254,6 +2334,7 @@ async function generateResponse2(contents, systemInstruction5) {
   return response;
 }
 
+// src/controllers/earthquakeController.ts
 var systemInstruction2 = `You are an earthquake monitoring AI assistant for seismic analysis and historical data interpretation. Generate a concise professional summary that includes:
 - Historical earthquake activity assessment
 - Analysis of magnitude patterns and frequency
@@ -2479,6 +2560,7 @@ async function getEarthquake(req, res) {
   }
 }
 
+// src/routes/earthquakes.ts
 var router5 = Router4();
 router5.post("/", async (req, res, next) => {
   try {
@@ -2506,10 +2588,12 @@ router5.get(
 );
 var earthquakes_default = router5;
 
+// src/routes/notifications.ts
 import { Router as Router5 } from "express";
 
-import { config as config10 } from "dotenv";
-config10({ path: ".env.local" });
+// src/controllers/notificationController.ts
+import { config as config11 } from "dotenv";
+config11({ path: ".env.local" });
 var systemInstruction3 = "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated magnitude [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
 async function sendAllNotifications(req, res) {
   const { magnitude } = req.body;
@@ -2630,7 +2714,7 @@ Queyk Alert System`,
                 <!-- Footer -->
                 <tr>
                   <td style="background-color: #f1f3f5; text-align: center; padding: 20px; font-size: 12px; color: #556575; border-top: 1px solid #e9ecef; border-radius: 0 0 12px 12px;">
-                    <p style="margin: 0;">&copy; ${(new Date()).getFullYear()} Queyk. All rights reserved.</p>
+                    <p style="margin: 0;">&copy; ${(/* @__PURE__ */ new Date()).getFullYear()} Queyk. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -2687,6 +2771,7 @@ Queyk Alert System`,
   }
 }
 
+// src/routes/notifications.ts
 var router6 = Router5();
 router6.post("/", async (req, res, next) => {
   try {
@@ -2697,10 +2782,12 @@ router6.post("/", async (req, res, next) => {
 });
 var notifications_default = router6;
 
+// src/routes/push-notifications.ts
 import { Router as Router6 } from "express";
 
-import { config as config11 } from "dotenv";
-config11({ path: ".env.local" });
+// src/controllers/pushNotificationController.ts
+import { config as config12 } from "dotenv";
+config12({ path: ".env.local" });
 var systemInstruction4 = "You are an emergency alert system for a school. Generate concise, clear, and urgent notification text similar to mobile earthquake alerts. Always start with 'Estimated magnitude [X] earthquake detected.' Do not include 'EARTHQUAKE ALERT' prefix. Keep the tone professional but urgent, and focus only on essential safety information. Response should be 1-2 sentences maximum, like a real emergency push notification.";
 async function sendPushNotification(req, res) {
   const { magnitude } = req.body;
@@ -2752,6 +2839,7 @@ async function sendPushNotification(req, res) {
   }
 }
 
+// src/routes/push-notifications.ts
 var router7 = Router6();
 router7.post("/", async (req, res, next) => {
   try {
@@ -2762,6 +2850,7 @@ router7.post("/", async (req, res, next) => {
 });
 var push_notifications_default = router7;
 
+// src/app.ts
 var app = express2();
 app.set("trust proxy", 1);
 var limiter = rateLimit({
@@ -2770,14 +2859,32 @@ var limiter = rateLimit({
   message: "Too many requests from this IP, please try again later.",
   headers: true
 });
+var allowedOrigins = [
+  process.env.FRONTEND_APP_URL,
+  process.env.LOCALHOST_APP_URL,
+  "http://localhost:3000",
+  "http://localhost:9245",
+  "http://127.0.0.1:9245",
+  "http://localhost:9246",
+  "http://127.0.0.1:9246",
+  "wails://localhost",
+  "wails://localhost:9245",
+  "wails://wails",
+  "http://wails.localhost"
+].filter(Boolean);
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? [process.env.FRONTEND_APP_URL] : [
-      process.env.FRONTEND_APP_URL,
-      process.env.LOCALHOST_APP_URL ?? ""
-    ].filter(Boolean),
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || origin === "null") {
+        return callback(null, true);
+      }
+      if (process.env.NODE_ENV !== "production" && (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) || origin.startsWith("wails://"))) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization", "Token-Type"]
@@ -2805,6 +2912,7 @@ app.use("/v1/api/earthquakes", limiter, earthquakes_default);
 app.use("/v1/api/iot/device", iot_default);
 var app_default = app;
 
+// src/serverless.ts
 var serverless_default = app_default;
 export {
   serverless_default as default
