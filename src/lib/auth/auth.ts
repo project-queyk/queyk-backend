@@ -93,9 +93,10 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins: [
-    process.env.FRONTEND_APP_URL || "http://localhost:3000",
-    process.env.LOCALHOST_APP_URL || "http://localhost:8080",
+    process.env.FRONTEND_APP_URL,
+    process.env.LOCALHOST_APP_URL,
     "http://localhost:3000",
+    "http://localhost:8080",
     "http://localhost:9245",
     "http://127.0.0.1:9245",
     "http://localhost:9246",
@@ -104,7 +105,7 @@ export const auth = betterAuth({
     "wails://localhost:9245",
     "wails://wails",
     "http://wails.localhost",
-  ],
+  ].filter(Boolean) as string[],
   hooks: {
     after: createAuthMiddleware(async (ctx) => {
       if (ctx.path.startsWith("/callback")) {
@@ -117,9 +118,20 @@ export const auth = betterAuth({
           const cookieName = ctx.context.authCookies.sessionToken.name;
           const token = parsed.get(cookieName)?.value;
           if (token) {
-            const redirectUrl = new URL(location, ctx.context.baseURL || "http://localhost:8080");
-            redirectUrl.searchParams.set("token", token);
-            ctx.setHeader("Location", redirectUrl.toString());
+            const redirectUrl = new URL(
+              location,
+              ctx.context.baseURL || "http://localhost:8080",
+            );
+
+            const isDesktopOrPopup =
+              redirectUrl.searchParams.get("popup") === "true" ||
+              redirectUrl.protocol === "wails:" ||
+              redirectUrl.hostname.includes("wails");
+
+            if (isDesktopOrPopup) {
+              redirectUrl.searchParams.set("token", token);
+              ctx.setHeader("Location", redirectUrl.toString());
+            }
           }
         }
       }
